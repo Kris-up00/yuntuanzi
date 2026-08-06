@@ -365,7 +365,8 @@ body.night .stars-layer { opacity: 1; }
   margin-bottom: 12px;
   flex: 0 0 auto;
 }
-.music-tracks {
+.music-tracks,
+#musicTrackList {
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -374,6 +375,7 @@ body.night .stars-layer { opacity: 1; }
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;   /* iOS 顺滑滚动 */
   overscroll-behavior: contain;        /* 防止滚动传染到背景 */
+  min-height: 0;                       /* flex 子项允许收缩，滚动才生效 */
 }
 .track-btn {
   padding: 9px 12px;
