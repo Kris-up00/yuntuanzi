@@ -2210,6 +2210,14 @@ const AMBIENT_TRACKS = [
   { id: 'binaural',   name: '🧘 双耳节拍θ波',cat: 'zen', url: 'sounds/binaural.wav' },
   { id: 'whiteNoise', name: '⚪ 白噪音',    cat: 'zen', url: 'sounds/whiteNoise.wav' },
   { id: 'pinkNoise',  name: '🌸 粉噪音',    cat: 'zen', url: 'sounds/pinkNoise.wav' },
+  // ===== 钢琴轻音（治愈/放空）=====
+  { id: 'pianoHaohai',  name: '🎹 花海·钢琴版',   cat: 'zen', url: 'sounds/piano-haohai.mp3' },
+  { id: 'pianoZuichang',name: '🎹 最长的电影·钢琴', cat: 'zen', url: 'sounds/piano-zuichang.mp3' },
+  { id: 'timeToPaint',  name: '🎹 Time To Paint',  cat: 'zen', url: 'sounds/time-to-paint.mp3' },
+  // ===== 古琴养生（中医/五行音乐）=====
+  { id: 'guqinYangsheng', name: '🎻 养生禅修·古琴', cat: 'yangsheng', url: 'sounds/guqin-yangsheng.mp3' },
+  { id: 'guqinWuxing',    name: '🎻 五音疗疾·古琴', cat: 'yangsheng', url: 'sounds/guqin-wuxing.ogg' },
+  { id: 'guqinJueyin',    name: '🎻 角音疏肝·古琴', cat: 'yangsheng', url: 'sounds/guqin-jueyin.mp3' },
 ];
 
 /* 曲目分类（音乐面板分组用）*/
@@ -2217,7 +2225,8 @@ const TRACK_CATS = [
   { id: 'mine',    name: '🎵 我的音乐', tip: '你自己加的音乐，点 ➕ 添加' },
   { id: 'nature',  name: '🌿 自然氛围', tip: '猫咪·海浪·森林·篝火·风铃' },
   { id: 'rain',    name: '🌧️ 雨声助眠', tip: '下雨天/失眠夜' },
-  { id: 'zen',     name: '🧘 禅意冥想', tip: '寺庙·风铃·颂钵·白噪音' },
+  { id: 'zen',       name: '🧘 禅意冥想', tip: '寺庙·风铃·颂钵·白噪音·钢琴' },
+  { id: 'yangsheng', name: '🎻 古琴养生', tip: '中医·五行·疗愈古琴' },
 ];
 
 /* ===== 用户自定义音乐 =====
