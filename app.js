@@ -3769,3 +3769,14 @@ window.addEventListener('load', () => {
   // 延迟到首屏渲染完，避免和开场问候挤一起
   setTimeout(showIOSInstallTip, 2500);
 });
+
+/* 页面侧：收到 Service Worker 发来的"刷新拿新版"消息，自动刷新一次
+   配合 sw.js 的 activate 通知，让用户刷新一次就能拿到最新代码 */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data === 'reload-for-update') {
+      location.reload();
+    }
+  });
+}
+

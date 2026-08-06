@@ -11,7 +11,7 @@
    - 缓存键用 pathname（忽略 ?v= 查询），发版时改 CACHE_NAME 即可整体换新。
    ========================================================= */
 
-const CACHE_NAME = 'yztz-static-v8';
+const CACHE_NAME = 'yztz-static-v9';
 const RUNTIME_CACHE = 'yztz-runtime-v1';
 
 /* 预缓存：应用外壳。这些是首次安装就要拿到的文件，体积都不大。
@@ -62,6 +62,9 @@ self.addEventListener('activate', (event) => {
     );
     // 切到新 SW 后立刻接管所有页面，避免用户还要刷新两次
     await self.clients.claim();
+    // 通知所有页面：新版本已就绪，刷新一次就能拿到最新内容
+    const allClients = await self.clients.matchAll({ type: 'window' });
+    allClients.forEach(c => c.postMessage('reload-for-update'));
   })());
 });
 
@@ -93,20 +96,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 静态资源（CSS/JS/图标/声音）：缓存优先，命中就用，没命中去网络拿并存下来
+  // 静态资源（CSS/JS/图标/声音）：网络优先，每次都拿最新版，拿不到才用缓存兜底
+  // 这样发版后用户刷新一次就能看到新内容，不用手动清 Service Worker
   event.respondWith((async () => {
-    const cached = await caches.match(key);
-    if (cached) return cached;
     try {
       const fresh = await fetch(req);
-      // 只缓存成功的同源响应，避免把错误页存进去
+      // 拿到新版就更新缓存
       if (fresh && fresh.ok && fresh.type === 'basic') {
-        const cache = await caches.open(RUNTIME_CACHE);
+        const cache = await caches.open(CACHE_NAME);
         cache.put(key, fresh.clone()).catch(() => {});
       }
       return fresh;
     } catch (e) {
-      // 离线且没缓存过：声音这类就返回空，前端 <audio> 会安静失败，不报错
+      // 离线兜底：用缓存
+      const cached = await caches.match(key);
+      if (cached) return cached;
       return Response.error();
     }
   })());
