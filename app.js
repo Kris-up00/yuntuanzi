@@ -2864,18 +2864,26 @@ function boot() {
   if (typeof recallMemoryOnBoot === 'function') recallMemoryOnBoot();
 }
 /* =========================================================
-   14. 远程留言（你写给家人的话）—— 纯本地存储
+   14. 远程留言（你写给家人的话）+ GitHub Gist 云端同步
    ----------------------------------------------------------
-   写好的留言只存在你当前设备浏览器里，换设备/清缓存会丢。
-   家人打开网址看不到你的留言（无云端）。
+   你写留言 → 上传到 Gist 云端 → 家人打开网址自动拉取显示。
+   - 读取（家人看）：公开 Gist，无需任何凭证
+   - 写入（你写）：需要 GitHub Token，首次手输一次后存浏览器本地
+   Token 只存在你这台设备的浏览器里，不会写进代码、不上传服务器。
    ========================================================= */
 const MSG_KEY = 'yuntuzi_family_msg';
+const MSG_TOKEN_KEY = 'yztz_gist_token';   // 用户首次手输的 GitHub Token
+const GIST_ID = '191e2dd774003ed37379af9bfb1f0626';
+const GIST_RAW = 'https://gist.githubusercontent.com/Kris-up00/' + GIST_ID + '/raw/msg.json';
+
 const $msgInput = document.getElementById('msgInput');
 const $msgSave = document.getElementById('msgSave');
 const $msgSaved = document.getElementById('msgSaved');
 const $msgSavedText = document.getElementById('msgSavedText');
 const $msgClear = document.getElementById('msgClear');
 const $msgTip = document.getElementById('msgTip');
+
+function getGistToken() { return localStorage.getItem(MSG_TOKEN_KEY) || ''; }
 
 function renderMsg() {
   const msg = localStorage.getItem(MSG_KEY);
@@ -2889,32 +2897,159 @@ function renderMsg() {
     $msgInput.placeholder = '比如：妈妈辛苦啦，记得按时吃饭，我爱你';
   }
 }
-$msgSave.addEventListener('click', () => {
-  const t = $msgInput.value.trim();
-  if (!t) { $msgTip.textContent = '写点什么再保存吧～'; return; }
-  localStorage.setItem(MSG_KEY, t);
+
+/* ---- 读云端：公开 Gist，无需 Token ---- */
+async function cloudLoadMsg() {
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 8000);
+    // 加 ?t=时间戳 防止 CDN 缓存
+    const res = await fetch(GIST_RAW + '?t=' + Date.now(), { signal: ctrl.signal });
+    clearTimeout(tid);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.msg || null;
+  } catch (e) {
+    console.warn('[云团子] 拉取云端留言失败', e);
+    return null;
+  }
+}
+
+/* ---- 写云端：需要 Token ---- */
+async function cloudSaveMsg(text) {
+  const token = getGistToken();
+  if (!token) return { ok: false, needToken: true };
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 10000);
+    const res = await fetch('https://api.github.com/gists/' + GIST_ID, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        description: 'yuntuanzi-family-msg',
+        files: { 'msg.json': { content: JSON.stringify({ msg: text, ts: Date.now() }) } },
+      }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+    if (res.status === 401 || res.status === 403) return { ok: false, badToken: true };
+    return { ok: res.ok };
+  } catch (e) {
+    return { ok: false, error: e };
+  }
+}
+
+/* ---- 删云端：把内容清空 ---- */
+async function cloudClearMsg() {
+  const token = getGistToken();
+  if (!token) return { ok: false, needToken: true };
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 10000);
+    const res = await fetch('https://api.github.com/gists/' + GIST_ID, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        files: { 'msg.json': { content: JSON.stringify({ msg: '', ts: Date.now() }) } },
+      }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+    return { ok: res.ok };
+  } catch (e) { return { ok: false, error: e }; }
+}
+
+/* 打开 app 时：先读本地，再异步从云端拉最新 */
+async function bootSyncMsg() {
   renderMsg();
-  $msgTip.textContent = '✅ 已保存';
-  setTimeout(() => { $msgTip.textContent = '家人打开云团子时，云团子会替你把这段话带给他～'; }, 2000);
+  const cloud = await cloudLoadMsg();
+  if (cloud) {
+    localStorage.setItem(MSG_KEY, cloud);
+    renderMsg();
+    if (!localStorage.getItem('yztz_msg_synced_flag')) {
+      localStorage.setItem('yztz_msg_synced_flag', '1');
+      $msgTip.textContent = '☁️ 有留给你的话，云团子替 ta 带来了～';
+      setTimeout(() => { $msgTip.textContent = '家人打开云团子时，云团子会替你把这段话带给他～'; }, 4000);
+    }
+  }
+}
+
+/* 弹窗：让用户首次输入 Token */
+function promptForToken() {
+  const t = window.prompt(
+    '为了让家人看到你的留言，需要填一次你的 GitHub Token。\n\n' +
+    '获取方法：\n' +
+    '1. 打开 https://github.com/settings/tokens\n' +
+    '2. Generate new token (classic)\n' +
+    '3. 勾选 gist，生成后复制\n\n' +
+    'Token 只存在你这台设备，不会上传。粘贴 Token：'
+  );
+  if (t && t.trim()) {
+    localStorage.setItem(MSG_TOKEN_KEY, t.trim());
+    return t.trim();
+  }
+  return null;
+}
+
+$msgSave.addEventListener('click', async () => {
+  const text = $msgInput.value.trim();
+  if (!text) { $msgTip.textContent = '写点什么再保存吧～'; return; }
+  localStorage.setItem(MSG_KEY, text);
+  renderMsg();
+  if (!getGistToken()) {
+    $msgTip.textContent = '首次保存到云端，需要填一次 GitHub Token…';
+    const token = promptForToken();
+    if (!token) {
+      $msgTip.textContent = '已保存在本机。要同步给家人，下次保存时填一下 Token 哦';
+      setTimeout(() => { $msgTip.textContent = '家人打开云团子时，云团子会替你把这段话带给他～'; }, 3500);
+      return;
+    }
+  }
+  $msgTip.textContent = '☁️ 正在同步到云端…';
+  const r = await cloudSaveMsg(text);
+  if (r.ok) {
+    $msgTip.textContent = '✅ 已保存！家人打开网址会自动看到这段话';
+  } else if (r.badToken) {
+    localStorage.removeItem(MSG_TOKEN_KEY);
+    $msgTip.textContent = '⚠️ Token 失效，已清除。下次保存时重新填一下';
+  } else {
+    $msgTip.textContent = '⚠️ 本机已存，云端同步失败（检查网络）';
+  }
+  setTimeout(() => { $msgTip.textContent = '家人打开云团子时，云团子会替你把这段话带给他～'; }, 3500);
 });
-$msgClear.addEventListener('click', () => {
+
+$msgClear.addEventListener('click', async () => {
   localStorage.removeItem(MSG_KEY);
   renderMsg();
-  $msgTip.textContent = '已清除留言';
-  setTimeout(() => { $msgTip.textContent = '家人打开云团子时，云团子会替你把这段话带给他～'; }, 2000);
+  if (getGistToken()) {
+    $msgTip.textContent = '☁️ 正在从云端清除…';
+    const r = await cloudClearMsg();
+    $msgTip.textContent = r.ok ? '已从云端清除留言' : '本机已清，云端清除失败';
+  } else {
+    $msgTip.textContent = '已清除留言';
+  }
+  setTimeout(() => { $msgTip.textContent = '家人打开云团子时，云团子会替你把这段话带给他～'; }, 2500);
 });
-renderMsg();
 
-// 家人打开时，若有留言，开场由云团子转达（在 boot() 中调用）
+/* 家人打开 app 时：若云端有你的留言，云团子替你转达 */
 function showFamilyMessageIfAny() {
   const msg = localStorage.getItem(MSG_KEY);
   if (!msg) return;
   setTimeout(() => {
-    showBubble('💌 家人托我带句话给你："' + msg + '"', 8000);
-    setMood('comfort', 6000);
-  }, 2000);
+    if (typeof showBubble === 'function') {
+      showBubble('💌 家人托我带句话给你："' + msg + '"', 8000);
+    }
+    if (typeof setMood === 'function') setMood('comfort', 6000);
+  }, 2500);
 }
 
+bootSyncMsg();
 /* =========================================================
    16. 睡前温柔语音哄睡（Web Speech API）
    ========================================================= */
