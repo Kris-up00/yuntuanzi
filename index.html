@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>云团子 · 你的小陪伴</title>
-  <link rel="stylesheet" href="style.css?v=30" />
+  <link rel="stylesheet" href="style.css?v=31" />
 
   <!-- PWA：可装到桌面、离线可用 -->
   <link rel="manifest" href="manifest.json" />
@@ -300,6 +300,26 @@
     </div>
   </div>
 
+  <!-- ============ 弹窗：首次输入 GitHub Token ============ -->
+  <div id="tokenModal" class="modal hide">
+    <div class="modal-card">
+      <button class="close-btn" data-close-token>×</button>
+      <h3>🔐 填一次 GitHub Token</h3>
+      <p class="modal-tip">
+        为了把留言同步到云端让家人看到，需要填一次你的 GitHub Token。<br>
+        Token 只存在你这台设备，不会上传。
+      </p>
+      <input id="tokenInput" type="password" autocomplete="off" placeholder="ghp_... 粘贴到这里" />
+      <p class="token-help">
+        获取方法：打开 <b>github.com/settings/tokens</b> →
+        Generate new token (classic) → 勾选 <b>gist</b> → 生成后复制粘贴
+      </p>
+      <p id="tokenError" class="token-error hide"></p>
+      <button id="tokenSubmit" class="primary-btn">保存 Token 并上传留言</button>
+      <button class="ghost-btn" data-close-token>稍后再说</button>
+    </div>
+  </div>
+
   <!-- ============ 弹窗：心情日历 ============ -->
   <div id="moodCalendarModal" class="modal hide">
     <div class="modal-card">
@@ -428,7 +448,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=60"></script>
+  <script src="app.js?v=61"></script>
   <script>
     // 注册 Service Worker：仅在 https/localhost 下生效，文件读取(file://)自动跳过
     if ('serviceWorker' in navigator) {

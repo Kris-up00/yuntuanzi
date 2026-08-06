@@ -2980,21 +2980,46 @@ async function bootSyncMsg() {
   }
 }
 
-/* 弹窗：让用户首次输入 Token */
-function promptForToken() {
-  const t = window.prompt(
-    '为了让家人看到你的留言，需要填一次你的 GitHub Token。\n\n' +
-    '获取方法：\n' +
-    '1. 打开 https://github.com/settings/tokens\n' +
-    '2. Generate new token (classic)\n' +
-    '3. 勾选 gist，生成后复制\n\n' +
-    'Token 只存在你这台设备，不会上传。粘贴 Token：'
-  );
-  if (t && t.trim()) {
-    localStorage.setItem(MSG_TOKEN_KEY, t.trim());
-    return t.trim();
+/* 弹窗：让用户首次输入 Token
+   注意：用应用内模态框而不是 window.prompt()。
+   预览/iframe 沙箱会静默拦截原生 prompt，导致点了保存却看不到弹窗。 */
+const $tokenModal = document.getElementById('tokenModal');
+const $tokenInput = document.getElementById('tokenInput');
+const $tokenSubmit = document.getElementById('tokenSubmit');
+const $tokenError = document.getElementById('tokenError');
+let _tokenResolve = null;
+
+function openTokenModal() {
+  $tokenInput.value = '';
+  $tokenError.classList.add('hide');
+  $tokenError.textContent = '';
+  $tokenModal.classList.remove('hide');
+  setTimeout(() => { try { $tokenInput.focus(); } catch (e) {} }, 60);
+  return new Promise(resolve => { _tokenResolve = resolve; });
+}
+function closeTokenModal(result) {
+  $tokenModal.classList.add('hide');
+  if (_tokenResolve) { const r = _tokenResolve; _tokenResolve = null; r(result); }
+}
+$tokenSubmit.addEventListener('click', () => {
+  const t = $tokenInput.value.trim();
+  if (!t) {
+    $tokenError.textContent = 'Token 不能为空哦～';
+    $tokenError.classList.remove('hide');
+    return;
   }
-  return null;
+  localStorage.setItem(MSG_TOKEN_KEY, t);
+  closeTokenModal(t);
+});
+$tokenInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); $tokenSubmit.click(); }
+});
+document.querySelectorAll('[data-close-token]').forEach((b) =>
+  b.addEventListener('click', () => closeTokenModal(null))
+);
+
+async function promptForToken() {
+  return await openTokenModal();
 }
 
 $msgSave.addEventListener('click', async () => {
@@ -3004,7 +3029,7 @@ $msgSave.addEventListener('click', async () => {
   renderMsg();
   if (!getGistToken()) {
     $msgTip.textContent = '首次保存到云端，需要填一次 GitHub Token…';
-    const token = promptForToken();
+    const token = await promptForToken();
     if (!token) {
       $msgTip.textContent = '已保存在本机。要同步给家人，下次保存时填一下 Token 哦';
       setTimeout(() => { $msgTip.textContent = '家人打开云团子时，云团子会替你把这段话带给他～'; }, 3500);
