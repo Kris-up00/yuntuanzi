@@ -877,16 +877,25 @@ function tryMusicCommand(text) {
     switchAmbientTrack(pick.id);
     return { ok: true, msg: '放你喜欢的「' + pick.name.replace(/^\S+\s/, '') + '」陪你～ ☁️', mood: 'comfort' };
   }
-  // 想听钢琴——钢琴曲已下架，引导用户自己加喜欢的
+  // 想听钢琴——直接从 zen 分类里的钢琴曲中选
   if (/(想听.*?钢琴|放.*?钢琴|来.*?钢琴|钢琴.*?曲|弹.*?钢琴|有没有.*?钢琴|钢琴.*?吗)/.test(t)) {
-    const mine = AMBIENT_TRACKS.filter(x => x.cat === 'mine');
-    if (mine.length > 0) {
-      // 你加过音乐，放一首你喜欢的代替
-      const pick = mine[Math.floor(Math.random() * mine.length)];
+    const pianoPool = AMBIENT_TRACKS.filter(x => x.cat === 'zen' && x.id.startsWith('piano'));
+    if (pianoPool.length > 0) {
+      const pick = pianoPool[Math.floor(Math.random() * pianoPool.length)];
       switchAmbientTrack(pick.id);
-      return { ok: true, msg: '钢琴曲我收起来了～放你喜欢的「' + pick.name.replace(/^\S+\s/, '') + '」陪你吧 ☁️', mood: 'comfort' };
+      return { ok: true, msg: '给你放钢琴曲～「' + pick.name.replace(/^\S+\s/, '') + '」🎹', mood: 'comfort' };
     }
-    return { ok: true, msg: '钢琴曲我收起来啦～你想听哪首，自己加进来吧？点右上角 🎵 里的「➕ 添加」，加完我就放给你听 🎵', mood: 'calm' };
+    return { ok: true, msg: '暂时没有钢琴曲呢～点右上角 🎵 里的「➕ 添加」可以加你喜欢的 🎹', mood: 'calm' };
+  }
+  // 想听古琴
+  if (/(想听.*?古琴|放.*?古琴|来.*?古琴|古琴.*?曲|弹.*?古琴|有没有.*?古琴|古琴.*?吗)/.test(t)) {
+    const guqinPool = AMBIENT_TRACKS.filter(x => x.cat === 'yangsheng');
+    if (guqinPool.length > 0) {
+      const pick = guqinPool[Math.floor(Math.random() * guqinPool.length)];
+      switchAmbientTrack(pick.id);
+      return { ok: true, msg: '给你放古琴～「' + pick.name.replace(/^\S+\s/, '') + '」🎻', mood: 'calm' };
+    }
+    return null;
   }
   // 想听雨声
   if (/(想听.*?雨|放.*?雨|来.*?雨|下雨)/.test(t)) {
@@ -1166,7 +1175,7 @@ async function callLLMStream(userText, onChunk) {
       console.warn('%c[云团子] 错误详情:', 'color:#e15a5a', errBody.slice(0, 300));
       if (res.status === 401) console.warn('%c[云团子] 401 = KEY 错了或失效，去智谱后台重新拿一个',
         'color:#e15a5a');
-      if (res.status === 403) console.warn('%c[云团子] 403 = 账户没开 glm-4.7-flash 权限，去后台开通',
+      if (res.status === 403) console.warn('%c[云团子] 403 = 账户没开 glm-4-flash 权限，去后台开通',
         'color:#e15a5a');
       if (res.status === 429) console.warn('%c[云团子] 429 = 调用太频繁或额度用完，等等再试',
         'color:#e15a5a');

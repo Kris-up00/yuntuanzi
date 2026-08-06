@@ -1880,6 +1880,18 @@ body.night .spirit-glow {
   background: var(--c-secondary);
   color: #fff;
 }
+
+/* ---------- 睡前：哄睡语音按钮 ---------- */
+.sleep-voice-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 14px;
+}
+.sleep-voice-row .ghost-btn {
+  font-size: 13px;
+  padding: 8px 16px;
+}
 .reply-box { font-size: 15px; line-height: 1.8; color: var(--c-text); }
 
 /* ---------- 云团子记得（记忆） ---------- */

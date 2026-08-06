@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>云团子 · 你的小陪伴</title>
-  <link rel="stylesheet" href="style.css?v=31" />
+  <link rel="stylesheet" href="style.css?v=32" />
 
   <!-- PWA：可装到桌面、离线可用 -->
   <link rel="manifest" href="manifest.json" />
@@ -173,6 +173,9 @@
       <textarea id="talkInput" rows="5" placeholder="今天有什么事压在心里吗？"></textarea>
       <button id="talkSend" class="primary-btn">告诉云团子</button>
       <div id="talkReply" class="reply-box hide"></div>
+      <div class="talk-tools">
+        <button id="talkVoiceBtn" class="ghost-btn talk-voice-btn">🔊 让团子念给我听</button>
+      </div>
       <!-- 智能对话开关：填智谱 Key 后启用真 AI 对话 -->
       <div class="ai-toggle">
         <span id="aiStatus">🤖 智能对话：未启用</span>
@@ -325,7 +328,7 @@
     <div class="modal-card">
       <button class="close-btn" data-close>×</button>
       <h3>📅 心情日历</h3>
-      <p class="modal-tip">记录每天的 mood，看见自己的情绪轨迹</p>
+      <p class="modal-tip">记录每天的心情，看见自己的情绪轨迹</p>
       <div class="mood-picker">
         <button class="mood-pick" data-mood="great">😄</button>
         <button class="mood-pick" data-mood="ok">🙂</button>
@@ -396,6 +399,10 @@
         <p class="zzz">Z z z …</p>
       </div>
       <p class="sleep-wish">今天辛苦啦，好好休息，明天云团子还在这里等你哦 💤</p>
+      <div class="sleep-voice-row">
+        <button id="sleepVoiceBtn" class="ghost-btn">🎙️ 让团子哄我入睡</button>
+        <button id="sleepVoiceStop" class="ghost-btn hide">🛑 好了，安静睡</button>
+      </div>
       <button id="wakeBtn" class="ghost-btn">☀️ 天亮了</button>
     </div>
   </div>
@@ -448,7 +455,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=62"></script>
+  <script src="app.js?v=63"></script>
   <script>
     // 注册 Service Worker：仅在 https/localhost 下生效，文件读取(file://)自动跳过
     if ('serviceWorker' in navigator) {

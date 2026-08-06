@@ -11,7 +11,7 @@
    - 缓存键用 pathname（忽略 ?v= 查询），发版时改 CACHE_NAME 即可整体换新。
    ========================================================= */
 
-const CACHE_NAME = 'yztz-static-v9';
+const CACHE_NAME = 'yztz-static-v10';
 const RUNTIME_CACHE = 'yztz-runtime-v1';
 
 /* 预缓存：应用外壳。这些是首次安装就要拿到的文件，体积都不大。
