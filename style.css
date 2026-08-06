@@ -356,18 +356,24 @@ body.night .stars-layer { opacity: 1; }
   padding: 18px;
   box-shadow: 0 12px 40px rgba(50, 50, 80, .2);
   width: 260px;
+  max-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
 }
 .music-panel-inner h4 {
   font-size: 15px;
   margin-bottom: 12px;
+  flex: 0 0 auto;
 }
 .music-tracks {
   display: flex;
   flex-direction: column;
   gap: 7px;
   margin-bottom: 14px;
-  max-height: 280px;
+  flex: 1 1 auto;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;   /* iOS 顺滑滚动 */
+  overscroll-behavior: contain;        /* 防止滚动传染到背景 */
 }
 .track-btn {
   padding: 9px 12px;

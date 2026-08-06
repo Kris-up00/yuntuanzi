@@ -11,23 +11,23 @@
    - 缓存键用 pathname（忽略 ?v= 查询），发版时改 CACHE_NAME 即可整体换新。
    ========================================================= */
 
-const CACHE_NAME = 'yztz-static-v3';
+const CACHE_NAME = 'yztz-static-v4';
 const RUNTIME_CACHE = 'yztz-runtime-v1';
 
 /* 预缓存：应用外壳。这些是首次安装就要拿到的文件，体积都不大。
    注意路径都是相对根（/），Cloudflare Pages 部署在根域名时直接可用。 */
 const PRECACHE_URLS = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/app.js',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/maskable-192.png',
-  '/icons/maskable-512.png',
-  '/icons/apple-touch-icon.png',
-  '/favicon-32.png',
+  './',
+  'index.html',
+  'style.css',
+  'app.js',
+  'manifest.json',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
+  'icons/maskable-192.png',
+  'icons/maskable-512.png',
+  'icons/apple-touch-icon.png',
+  'favicon-32.png',
 ];
 
 /* 把请求归一成缓存键：只保留同源 pathname，去掉 ?v=xxx 这类查询。
@@ -86,7 +86,7 @@ self.addEventListener('fetch', (event) => {
         cache.put(key, fresh.clone()).catch(() => {});
         return fresh;
       } catch (e) {
-        const cached = await caches.match(key) || await caches.match('/index.html');
+        const cached = await caches.match(key) || await caches.match('index.html');
         return cached || Response.error();
       }
     })());

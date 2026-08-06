@@ -2,35 +2,39 @@
   "name": "云团子 · 你的小陪伴",
   "short_name": "云团子",
   "description": "一朵在乎你的小云，陪你说话、陪你发呆、记得你的事。可装到桌面离线使用。",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#fef9f3",
   "theme_color": "#eaf6fb",
   "lang": "zh-CN",
-  "categories": ["lifestyle", "health", "social"],
+  "categories": [
+    "lifestyle",
+    "health",
+    "social"
+  ],
   "icons": [
     {
-      "src": "/icons/icon-192.png",
+      "src": "icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/maskable-192.png",
+      "src": "icons/maskable-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icons/maskable-512.png",
+      "src": "icons/maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
