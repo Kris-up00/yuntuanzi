@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>云团子 · 你的小陪伴</title>
+  <link rel="stylesheet" href="style.css?v=25" />
+
+  <!-- PWA：可装到桌面、离线可用 -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#eaf6fb" />
+  <meta name="description" content="一朵在乎你的小云，陪你说话、陪你发呆、记得你的事。" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="云团子" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+</head>
+<body>
+  <!-- 背景层（日/夜切换） -->
+  <div id="bg" class="bg bg-day"></div>
+  <!-- 分层治愈背景：天空光晕 + 远云 + 光斑 + 花瓣 + 日月 + 星星 -->
+  <div class="scene-layers" aria-hidden="true">
+    <div class="sky-glow"></div>
+    <div class="celestial sun" id="sunEl"></div>
+    <div class="celestial moon" id="moonEl"></div>
+    <div class="stars-layer" id="starsLayer"></div>
+    <div class="cloud-distant c1"></div>
+    <div class="cloud-distant c2"></div>
+    <div class="cloud-distant c3"></div>
+    <div class="bokeh-layer">
+      <span class="bokeh b1"></span><span class="bokeh b2"></span>
+      <span class="bokeh b3"></span><span class="bokeh b4"></span>
+      <span class="bokeh b5"></span><span class="bokeh b6"></span>
+    </div>
+    <div class="petal-layer" id="petalLayer"></div>
+  </div>
+
+  <!-- 顶部状态栏：陪伴天数 + 心情花园 + 星星 -->
+  <header class="topbar">
+    <div class="stats">
+      <div class="stat-item" id="daysStat" title="云团子认识你的天数">
+        <span class="stat-icon">☁️</span>
+        <span>陪伴<b id="daysCount">1</b>天</span>
+      </div>
+      <button class="stat-item garden-stat" id="gardenBtn" title="点开看看你的花园">
+        <span class="stat-icon">🌷</span>
+        <span>花园<b id="flowerCount">0</b>朵</span>
+      </button>
+      <div class="stat-item" title="星星能量">
+        <span class="stat-icon">⭐</span>
+        <span><b id="stars">0</b></span>
+      </div>
+    </div>
+    <div class="mode-btns">
+      <button id="musicBtn" class="mode-btn" title="背景音乐">🎵</button>
+      <button id="careBtn" class="mode-btn" title="暖心提醒">🔔</button>
+      <button id="msgBtn" class="mode-btn" title="给家人的话">💌</button>
+      <button id="moodCalBtn" class="mode-btn" title="心情日历">📅</button>
+      <button id="sleepBtn" class="mode-btn" title="睡前模式">🌙</button>
+    </div>
+  </header>
+
+  <!-- 音乐控制面板 -->
+  <div id="musicPanel" class="music-panel hide">
+    <div class="music-panel-inner">
+      <h4>🎵 背景音乐</h4>
+      <p class="synth-note">🎵 点一下就播 · 也可以直接对云团子说"关掉/换一首/想听钢琴"</p>
+      <div id="musicTrackList"></div>
+      <div class="music-volume">
+        <span>音量</span>
+        <input type="range" id="volumeSlider" min="0" max="100" value="40" />
+        <button id="musicStopBtn" class="ghost-btn music-stop-btn" title="停止">⏹</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主舞台 -->
+  <main class="stage">
+    <!-- 精灵容器 -->
+    <div class="spirit-wrap">
+      <!-- 飘动粒子层 -->
+      <div id="particles" class="particles"></div>
+      <div id="spiritBubble" class="spirit-bubble hide"></div>
+      <!-- 精灵发光层 -->
+      <div class="spirit-glow"></div>
+      <div id="spirit" class="spirit mood-calm">
+        <!-- 身体 -->
+        <div class="body">
+          <!-- 身体变色层（装扮用） -->
+          <div id="bodyColor" class="body-color-layer"></div>
+          <div class="body-blob b1"></div>
+          <div class="body-blob b2"></div>
+          <div class="body-blob b3"></div>
+          <div class="body-blob b4"></div>
+          <div class="body-main"></div>
+          <!-- 脸颊 -->
+          <div class="cheek left"></div>
+          <div class="cheek right"></div>
+          <!-- 眼睛 -->
+          <div class="eyes">
+            <div class="eye left"><div class="pupil"></div></div>
+            <div class="eye right"><div class="pupil"></div></div>
+          </div>
+          <!-- 嘴巴 -->
+          <div class="mouth"></div>
+        </div>
+        <!-- 装扮层 -->
+        <div id="accessories" class="accessories"></div>
+        <!-- 小云朵伙伴 -->
+        <div id="companion" class="companion hide"></div>
+      </div>
+      <!-- 星星飞出特效容器 -->
+      <div id="fxLayer" class="fx-layer"></div>
+    </div>
+
+    <!-- 精灵名字/问候 -->
+    <div class="spirit-greeting">
+      <h2 id="greetingText">嗨，我是云团子 ☁️</h2>
+      <p id="subGreeting">今天过得怎么样呀？</p>
+    </div>
+  </main>
+
+  <!-- 三大交互按钮 -->
+  <nav class="actions">
+    <button class="action-btn" data-action="talk">
+      <span class="action-ico">💬</span>
+      <span>说说话</span>
+    </button>
+    <button class="action-btn" data-action="breathe">
+      <span class="action-ico">☁️</span>
+      <span>陪陪你</span>
+    </button>
+    <button class="action-btn" data-action="joy">
+      <span class="action-ico">✨</span>
+      <span>小确幸</span>
+    </button>
+    <button class="action-btn" data-action="memory">
+      <span class="action-ico">🧠</span>
+      <span>云团子记得</span>
+    </button>
+    <button class="action-btn" data-action="shop">
+      <span class="action-ico">🎁</span>
+      <span>装扮</span>
+    </button>
+  </nav>
+
+  <!-- 浮动情绪急救按钮（永远可见，心里压得喘不过气时一键打开） -->
+  <button id="sosBtn" class="sos-btn" title="情绪急救">🆘</button>
+
+  <!-- ============ 情绪急救覆盖层（5-4-3-2-1 接地练习） ============ -->
+  <div id="sosOverlay" class="sos-overlay hide">
+    <div class="sos-inner">
+      <p class="sos-hello">深吸一口气，我在 💛</p>
+      <p id="sosStep" class="sos-step">慢慢跟着我做……</p>
+      <div id="sosRing" class="sos-ring"></div>
+      <p id="sosHint" class="sos-hint">准备…</p>
+      <div class="sos-actions">
+        <button id="sosStart" class="primary-btn">开始接地练习</button>
+        <button id="sosClose" class="ghost-btn">我缓过来了</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 弹窗：说说话 ============ -->
+  <div id="talkModal" class="modal hide">
+    <div class="modal-card">
+      <button class="close-btn" data-close>×</button>
+      <h3>💬 和云团子说说话</h3>
+      <p class="modal-tip">说什么都可以，云团子会好好接住的～</p>
+      <textarea id="talkInput" rows="5" placeholder="今天有什么事压在心里吗？"></textarea>
+      <button id="talkSend" class="primary-btn">告诉云团子</button>
+      <div id="talkReply" class="reply-box hide"></div>
+      <!-- 智能对话开关：填智谱 Key 后启用真 AI 对话 -->
+      <div class="ai-toggle">
+        <span id="aiStatus">🤖 智能对话：未启用</span>
+        <button id="aiKeyBtn" class="ai-key-btn">🔑 启用</button>
+      </div>
+      <!-- 诊断：上次回复到底走的哪条路（大模型 or 关键词）—— 帮助定位"答非所问" -->
+      <div class="ai-toggle" style="margin-top:4px;font-size:11px;opacity:.7">
+        <span id="lastReplySrc">⏳ 还没聊过</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 弹窗：填 Key ============ -->
+  <div id="aiKeyModal" class="modal hide">
+    <div class="modal-card">
+      <button class="close-btn" data-close>×</button>
+      <h3>🔑 启用智能对话</h3>
+      <p class="modal-tip">填入智谱 API Key，云团子就能真正听懂你说话、智能回应了。</p>
+      <input type="password" id="aiKeyInput" class="ai-key-input" placeholder="粘贴你的智谱 API Key" autocomplete="off" />
+      <p class="ai-hint">
+        Key 只存在你这台手机的浏览器里，不会写进代码，发给别人也看不到。<br>
+        还没 Key？<a href="https://open.bigmodel.cn/" target="_blank" class="ai-link">点这里注册智谱（免费）</a>
+      </p>
+      <div class="ai-actions">
+        <button id="aiKeySave" class="primary-btn">保存并启用</button>
+        <button id="aiKeyClear" class="ghost-btn">清除 Key</button>
+      </div>
+      <p id="aiKeyMsg" class="ai-key-msg"></p>
+    </div>
+  </div>
+
+  <!-- ============ 弹窗：陪陪你（什么都不用做） ============ -->
+  <div id="breatheModal" class="modal hide">
+    <div class="modal-card breathe-card">
+      <button class="close-btn" data-close>×</button>
+      <h3>☁️ 我陪着你</h3>
+      <p class="modal-tip">什么都不用做，待一会儿就好</p>
+      <div class="breathe-stage">
+        <div class="breathe-halo"></div>
+        <div id="breatheCircle" class="breathe-circle calm"></div>
+        <p id="breatheText" class="breathe-text">我在这里…</p>
+      </div>
+      <div class="breathe-actions">
+        <button id="breatheStart" class="primary-btn">待一会儿</button>
+        <button id="breatheStop" class="ghost-btn hide">好了</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 弹窗：小确幸 ============ -->
+  <div id="joyModal" class="modal hide">
+    <div class="modal-card">
+      <button class="close-btn" data-close>×</button>
+      <h3>✨ 记录一件小确幸</h3>
+      <p class="modal-tip">把今天让嘴角上扬的小事存起来，下次难过时来翻一翻 ✨</p>
+      <!-- 心情类型选择 -->
+      <div class="joy-kind-picker">
+        <span class="joy-kind-tip">今天是哪种开心？</span>
+        <div class="joy-kind-row" id="joyKindRow">
+          <button class="joy-kind-btn active" data-kind="star">⭐ 开心小事</button>
+          <button class="joy-kind-btn" data-kind="warm">💛 被暖到</button>
+          <button class="joy-kind-btn" data-kind="smile">😊 嘴角上扬</button>
+          <button class="joy-kind-btn" data-kind="yummy">🍵 好吃好喝</button>
+          <button class="joy-kind-btn" data-kind="cosy">☁️ 舒服放松</button>
+        </div>
+      </div>
+      <textarea id="joyInput" rows="3" placeholder="比如：今天的奶茶三分甜刚刚好 / 同事突然夸了我一句"></textarea>
+      <button id="joySave" class="primary-btn">收藏这颗小星星</button>
+      <div id="joyList" class="joy-list">
+        <h4>🌟 我的小确幸银行 <small style="font-weight:normal;opacity:.6">点 ✨ 重新回想一下</small></h4>
+        <ul id="joyListUl"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 弹窗：装扮商店 ============ -->
+  <div id="shopModal" class="modal hide">
+    <div class="modal-card">
+      <button class="close-btn" data-close>×</button>
+      <h3>🎁 给云团子添点小装饰</h3>
+      <p class="modal-tip">用收集的 ⭐ 星星 换装扮吧～</p>
+      <div id="shopGrid" class="shop-grid"></div>
+    </div>
+  </div>
+
+  <!-- ============ 弹窗：云团子记得 ============ -->
+  <div id="memoryModal" class="modal hide">
+    <div class="modal-card">
+      <button class="close-btn" data-close>×</button>
+      <h3>🧠 云团子记得你的事</h3>
+      <p class="modal-tip">我会把你说给我听的话悄悄记在心里，下次见面就不会忘了你～</p>
+      <div id="memoryList" class="memory-list"></div>
+      <div class="memory-tip">
+        💡 多和我说说话，我就能记住更多关于你的事；这些记忆只在你这台手机里，别人看不到。
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 弹窗：远程留言 ============ -->
+  <div id="msgModal" class="modal hide">
+    <div class="modal-card">
+      <button class="close-btn" data-close>×</button>
+      <h3>💌 给家人的话</h3>
+      <p class="modal-tip" id="msgTip">家人打开云团子时，云团子会替你把这段话带给他～</p>
+      <textarea id="msgInput" rows="4" placeholder="比如：妈妈辛苦啦，记得按时吃饭，我爱你"></textarea>
+      <button id="msgSave" class="primary-btn">保存留言</button>
+
+      <!-- 声音留言：录下你的真实声音，家人听到会更暖 -->
+      <div class="voice-block">
+        <p class="voice-label">🎙️ 再录一段你的声音吧（家人听到会更治愈）</p>
+        <div class="voice-row">
+          <button id="voiceRec" class="ghost-btn voice-rec-btn">🔴 开始录音</button>
+          <button id="voicePlay" class="ghost-btn hide">▶️ 试听</button>
+          <button id="voiceDel" class="ghost-btn hide">🗑️ 删除声音</button>
+        </div>
+        <p id="voiceStatus" class="voice-status"></p>
+        <audio id="voiceAudio" class="hide"></audio>
+      </div>
+
+      <div id="msgSaved" class="msg-saved hide">
+        <p class="msg-saved-label">✅ 当前留言（云团子会替你转达）：</p>
+        <p id="msgSavedText" class="msg-saved-text"></p>
+        <button id="msgClear" class="ghost-btn">清除留言</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 弹窗：心情日历 ============ -->
+  <div id="moodCalendarModal" class="modal hide">
+    <div class="modal-card">
+      <button class="close-btn" data-close>×</button>
+      <h3>📅 心情日历</h3>
+      <p class="modal-tip">记录每天的 mood，看见自己的情绪轨迹</p>
+      <div class="mood-picker">
+        <button class="mood-pick" data-mood="great">😄</button>
+        <button class="mood-pick" data-mood="ok">🙂</button>
+        <button class="mood-pick" data-mood="tired">😮‍💨</button>
+        <button class="mood-pick" data-mood="sad">😔</button>
+        <button class="mood-pick" data-mood="bad">😣</button>
+      </div>
+      <div id="moodCalendar" class="mood-calendar"></div>
+      <div id="moodSummary" class="mood-summary"></div>
+    </div>
+  </div>
+
+  <!-- ============ 弹窗：暖心提醒 ============ -->
+  <div id="careModal" class="modal hide">
+    <div class="modal-card">
+      <button class="close-btn" data-close>×</button>
+      <h3>🔔 暖心提醒</h3>
+      <p class="modal-tip">打开后，云团子会到点轻轻提醒你照顾自己～</p>
+      <div class="care-list">
+        <label class="care-row">
+          <span class="care-info"><b>💧 喝水提醒</b><small>每隔一会儿提醒喝口水</small></span>
+          <input type="checkbox" id="careWater" class="care-toggle" />
+          <span class="care-switch"></span>
+        </label>
+        <label class="care-row">
+          <span class="care-info"><b>🍚 按时吃饭</b><small>到饭点提醒好好吃饭</small></span>
+          <input type="checkbox" id="careMeal" class="care-toggle" />
+          <span class="care-switch"></span>
+        </label>
+        <label class="care-row">
+          <span class="care-info"><b>🌙 好好睡觉</b><small>到点提醒该睡了，别熬</small></span>
+          <input type="checkbox" id="careSleep" class="care-toggle" />
+          <span class="care-switch"></span>
+        </label>
+        <label class="care-row">
+          <span class="care-info"><b>🧘 起身活动</b><small>坐久了提醒站起伸个懒腰</small></span>
+          <input type="checkbox" id="careMove" class="care-toggle" />
+          <span class="care-switch"></span>
+        </label>
+      </div>
+      <p id="careStatus" class="care-status"></p>
+    </div>
+  </div>
+
+  <!-- ============ 弹窗：睡前模式 ============ -->
+  <div id="sleepModal" class="modal hide">
+    <div class="modal-card sleep-card">
+      <button class="close-btn" data-close>×</button>
+      <h3>🌙 睡前陪伴</h3>
+      <p class="modal-tip">云团子会陪你慢慢静下来…</p>
+      <div class="sleep-spirit">
+        <div class="spirit sleep-spirit-el mood-sleepy">
+          <div class="body">
+            <div class="body-blob b1"></div>
+            <div class="body-blob b2"></div>
+            <div class="body-blob b3"></div>
+            <div class="body-blob b4"></div>
+            <div class="body-main"></div>
+            <div class="cheek left"></div>
+            <div class="cheek right"></div>
+            <div class="eyes">
+              <div class="eye left closed"><div class="pupil"></div></div>
+              <div class="eye right closed"><div class="pupil"></div></div>
+            </div>
+            <div class="mouth sleep"></div>
+          </div>
+        </div>
+        <p class="zzz">Z z z …</p>
+      </div>
+      <p class="sleep-wish">今天辛苦啦，好好休息，明天云团子还在这里等你哦 💤</p>
+      <button id="wakeBtn" class="ghost-btn">☀️ 天亮了</button>
+    </div>
+  </div>
+
+  <!-- ============ 弹窗：添加我的音乐 ============ -->
+  <div id="addMusicModal" class="modal hide">
+    <div class="modal-card">
+      <button class="close-btn" data-close>×</button>
+      <h3>🎵 添加我的音乐</h3>
+      <p class="modal-tip">把想听的音乐加进来，下次不用再找～</p>
+      <label class="add-music-label">给它起个名字</label>
+      <input type="text" id="addMusicName" class="ai-key-input" placeholder="比如：妈妈爱的钢琴曲" autocomplete="off" />
+      <label class="add-music-label">方式一：粘贴音乐链接（永久保存）</label>
+      <input type="url" id="addMusicUrl" class="ai-key-input" placeholder="https://xxx.com/song.mp3" autocomplete="off" />
+      <p class="add-music-hint">支持 mp3 / wav / m4a / ogg 直链。链接类的会永久保存。</p>
+      <label class="add-music-label">方式二：选本地文件（也永久保存）</label>
+      <input type="file" id="addMusicFile" accept="audio/mp3,audio/wav,audio/m4a,audio/ogg,audio/x-m4a,audio/*" class="add-music-file" />
+      <p class="add-music-hint">✅ 选的文件会保存在本机，刷新页面也能听～</p>
+      <div class="ai-actions">
+        <button id="addMusicSave" class="primary-btn">保存</button>
+      </div>
+      <p id="addMusicMsg" class="ai-key-msg"></p>
+    </div>
+  </div>
+
+  <!-- ============ 弹窗：心情花园 ============ -->
+  <div id="gardenModal" class="modal hide">
+    <div class="modal-card garden-card">
+      <button class="close-btn" data-close>×</button>
+      <h3>🌷 我的小花园</h3>
+      <p class="modal-tip" id="gardenTip">每一次和你说话、陪你待一会儿、收下你的小确幸，这里就会悄悄开出一朵花 🌱</p>
+      <div id="gardenSky" class="garden-sky">
+        <div class="garden-sun"></div>
+        <div class="garden-cloud"></div>
+        <div class="garden-ground"></div>
+        <div id="gardenField" class="garden-field"></div>
+        <div id="gardenEmpty" class="garden-empty">
+          <div class="seed">🌰</div>
+          <p>这里还是一片空地</p>
+          <p class="garden-empty-hint">和云团子说说话、让 ta 陪你待一会儿、记一件小确幸<br>花朵就会自己悄悄长出来～</p>
+        </div>
+        <div class="garden-progress-text" id="gardenProgressText">🌱 再浇一点就开花啦</div>
+        <div class="garden-progress"><div class="garden-progress-fill" id="gardenProgressFill"></div></div>
+      </div>
+      <div class="garden-stats">
+        <div><b id="gardenTotal">0</b><small>总花朵</small></div>
+        <div><b id="gardenWater">0</b><small>今天浇水</small></div>
+        <div><b id="gardenDays">1</b><small>陪伴天数</small></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=55"></script>
+  <script>
+    // 注册 Service Worker：仅在 https/localhost 下生效，文件读取(file://)自动跳过
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function (err) {
+          console.warn('[云团子] Service Worker 注册失败：', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>

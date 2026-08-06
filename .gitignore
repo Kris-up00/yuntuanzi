@@ -1,0 +1,15 @@
+# 系统/编辑器
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Python（图标生成脚本产生的临时文件）
+__pycache__/
+*.pyc
+.tools-tmp/
+
+# 不要把本地预览/构建产物提交
+node_modules/
+.cache/
