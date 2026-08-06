@@ -2864,9 +2864,95 @@ function boot() {
   if (typeof recallMemoryOnBoot === 'function') recallMemoryOnBoot();
 }
 /* =========================================================
-   14. 远程留言（你写给家人的话）
+   14. 远程留言（你写给家人的话）+ 云端同步
+   ----------------------------------------------------------
+   文字留言同步到 JSONBin 云端：你在本机写 → 上传云端 →
+   家人打开同一个网址 → 自动拉取到他的设备显示。
+   声音留言太大，仍只存本地（PWA 装不下大文件）。
+   配置说明：
+   - 你需要在 https://jsonbin.io 注册（免费），创建一个 Bin
+   - 拿到 BIN_ID 和 X-Master-Key，填到下面的「云端留言设置」
+   - 没填也能用（降级为只存本地），填了才会真的同步给家人
    ========================================================= */
 const MSG_KEY = 'yuntuzi_family_msg';
+
+/* ---- 云端留言设置（用户自己填，从 JSONBin 拿到） ----
+   1. 去 https://jsonbin.io 注册（邮箱注册，免费）
+   2. 点 Create a Bin → 随便存一个 {"msg":""} → Create
+   3. 拿到 BIN URL，形如 https://api.jsonbin.io/v3/b/65abc...
+      其中 65abc... 就是 BIN_ID
+   4. 点 Account → API Keys → X-Master-Key，复制
+   5. 把这两个值填到下面两个变量（去掉引号里的占位） */
+const MSG_BIN_ID   = '';                  // 例如 '65abc1234567890...'
+const MSG_BIN_KEY   = '';                  // X-Master-Key，例如 '$2a$10$xxx...'
+
+function cloudReady() { return MSG_BIN_ID && MSG_BIN_KEY; }
+
+/* ---- 写云端 ---- */
+async function cloudSaveMsg(text) {
+  if (!cloudReady()) return false;
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 8000);
+    const res = await fetch('https://api.jsonbin.io/v3/b/' + MSG_BIN_ID, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': MSG_BIN_KEY,
+        'X-Bin-Versioning': 'false',
+      },
+      body: JSON.stringify({ msg: text, ts: Date.now() }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+    return res.ok;
+  } catch (e) {
+    console.warn('[云团子] 云端保存留言失败', e);
+    return false;
+  }
+}
+
+/* ---- 读云端 ---- */
+async function cloudLoadMsg() {
+  if (!cloudReady()) return null;
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 8000);
+    const res = await fetch('https://api.jsonbin.io/v3/b/' + MSG_BIN_ID + '/latest', {
+      headers: { 'X-Master-Key': MSG_BIN_KEY },
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return (data.record && data.record.msg) ? data.record.msg : null;
+  } catch (e) {
+    console.warn('[云团子] 云端读取留言失败', e);
+    return null;
+  }
+}
+
+/* ---- 删云端（清空）---- */
+async function cloudClearMsg() {
+  if (!cloudReady()) return false;
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 8000);
+    const res = await fetch('https://api.jsonbin.io/v3/b/' + MSG_BIN_ID, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': MSG_BIN_KEY,
+        'X-Bin-Versioning': 'false',
+      },
+      body: JSON.stringify({ msg: '', ts: Date.now() }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+    return res.ok;
+  } catch (e) { return false; }
+}
+
 const $msgInput = document.getElementById('msgInput');
 const $msgSave = document.getElementById('msgSave');
 const $msgSaved = document.getElementById('msgSaved');
@@ -2886,21 +2972,57 @@ function renderMsg() {
     $msgInput.placeholder = '比如：妈妈辛苦啦，记得按时吃饭，我爱你';
   }
 }
-$msgSave.addEventListener('click', () => {
+
+/* 打开 app 时：先读本地，再异步从云端拉最新（云端优先级高） */
+async function bootSyncMsg() {
+  renderMsg();
+  if (!cloudReady()) return;   // 没配云端就只用本地
+  const cloud = await cloudLoadMsg();
+  if (cloud) {
+    localStorage.setItem(MSG_KEY, cloud);
+    renderMsg();
+    // 如果是家人设备首次拉到，给个温柔提示
+    if (!localStorage.getItem('yztz_msg_synced_flag')) {
+      localStorage.setItem('yztz_msg_synced_flag', '1');
+      $msgTip.textContent = '☁️ 有留给你的话，云团子替 ta 带来了～';
+      setTimeout(() => { $msgTip.textContent = '家人打开云团子时，云团子会替你把这段话带给他～'; }, 4000);
+    }
+  }
+}
+
+$msgSave.addEventListener('click', async () => {
   const t = $msgInput.value.trim();
   if (!t) { $msgTip.textContent = '写点什么再保存吧～'; return; }
   localStorage.setItem(MSG_KEY, t);
   renderMsg();
-  $msgTip.textContent = '✅ 保存成功！家人打开云团子时会看到这段话';
-  setTimeout(() => { $msgTip.textContent = '家人打开云团子时，云团子会替你把这段话带给他～'; }, 2500);
+  if (cloudReady()) {
+    $msgTip.textContent = '☁️ 正在同步到云端，让家人也能看到…';
+    const ok = await cloudSaveMsg(t);
+    if (ok) {
+      $msgTip.textContent = '✅ 已保存！家人打开云团子时会自动看到这段话';
+    } else {
+      $msgTip.textContent = '⚠️ 本机已存，但云端同步失败（检查网络或 JSONBin 配置）';
+    }
+  } else {
+    $msgTip.textContent = '✅ 已保存（仅本机可见）。配置云端后，家人打开网址也能看到～';
+  }
+  setTimeout(() => { $msgTip.textContent = '家人打开云团子时，云团子会替你把这段话带给他～'; }, 3500);
 });
-$msgClear.addEventListener('click', () => {
+
+$msgClear.addEventListener('click', async () => {
   localStorage.removeItem(MSG_KEY);
   renderMsg();
-  $msgTip.textContent = '已清除留言';
-  setTimeout(() => { $msgTip.textContent = '家人打开云团子时，云团子会替你把这段话带给他～'; }, 2000);
+  if (cloudReady()) {
+    $msgTip.textContent = '☁️ 正在从云端清除…';
+    const ok = await cloudClearMsg();
+    $msgTip.textContent = ok ? '已从云端清除留言' : '本机已清，云端清除失败';
+  } else {
+    $msgTip.textContent = '已清除留言';
+  }
+  setTimeout(() => { $msgTip.textContent = '家人打开云团子时，云团子会替你把这段话带给他～'; }, 2500);
 });
-renderMsg();
+
+bootSyncMsg();
 
 // 家人打开时，若有留言，开场由云团子转达（在 boot() 中调用）
 function showFamilyMessageIfAny() {
