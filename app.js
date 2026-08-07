@@ -13,7 +13,7 @@
    Key 写在前端代码里只适合自用/送家人，公网部署不安全。
    ========================================================= */
 const ZHIPU_API_KEY = ''; // 留空：改从 localStorage 的 zhipu_key 读取，避免写进代码文件
-const ZHIPU_MODEL = 'glm-4-flashx'; // 免费增强版，比4-flash更聪明，比4.7更稳定
+const ZHIPU_MODEL = 'glm-4.7-flash'; // GLM-4.7 免费版，最聪明
 const ZHIPU_ENDPOINT = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 const ZHIPU_TTS_ENDPOINT = 'https://open.bigmodel.cn/api/paas/v4/audio/speech';
 const ZHIPU_TTS_VOICE = 'female'; // 智谱超拟人治愈女声（默认即"彤彤"），比浏览器机械音温暖太多
@@ -1134,21 +1134,32 @@ async function callLLMStream(userText, onChunk) {
   const messages = [sysMsg, ...recent];
   try {
     // 15 秒超时保护：大模型慢一点别急着判失败，给足思考时间显得更聪明
-    const ctrl = new AbortController();
-    const timeoutId = setTimeout(() => ctrl.abort(), 20000);
-    // 只有负面情绪才带 tools（放歌/陪陪你/记事），闲聊不带，避免 flash 模型分心答非所问
+    // 429自动重试：高峰期等3秒重试一次
     const isNegative = /累|焦虑|紧张|怕|孤独|委屈|崩溃|绝望|难过|伤心|不好|不开心|低落|烦|难受|痛|哭|emo|撑不|不想活|想死|睡不着|失眠|熬|压力|慌|寂寞|委屈|难过|想哭|撑不住|崩溃/.test(userText);
     const reqBody = {
       model: ZHIPU_MODEL, messages, temperature: 0.85, max_tokens: 420, stream: true,
     };
     if (isNegative) { reqBody.tools = CLOUD_TOOLS; reqBody.tool_choice = 'auto'; }
-    const res = await fetch(ZHIPU_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-      body: JSON.stringify(reqBody),
-      signal: ctrl.signal,
-    });
-    clearTimeout(timeoutId);
+
+    let res;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const ctrl = new AbortController();
+      const timeoutId = setTimeout(() => ctrl.abort(), 20000);
+      res = await fetch(ZHIPU_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify(reqBody),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timeoutId);
+      if (res.ok) break;
+      if (res.status === 429 && attempt === 0) {
+        console.warn('%c[云团子] 429限流，3秒后自动重试……', 'color:#e1a55a');
+        await new Promise(r => setTimeout(r, 3000));
+        continue;
+      }
+      break;
+    }
     if (!res.ok) {
       // 把真实 HTTP 错误码读出来，回传给调用方显示
       let errBody = '';
@@ -1158,7 +1169,7 @@ async function callLLMStream(userText, onChunk) {
       console.warn('%c[云团子] 错误详情:', 'color:#e15a5a', errBody.slice(0, 300));
       if (res.status === 401) console.warn('%c[云团子] 401 = KEY 错了或失效，去智谱后台重新拿一个',
         'color:#e15a5a');
-      if (res.status === 403) console.warn('%c[云团子] 403 = 账户没开 glm-4-flashx 权限，去后台开通',
+      if (res.status === 403) console.warn('%c[云团子] 403 = 账户没开 glm-4.7-flash 权限，去后台开通',
         'color:#e15a5a');
       if (res.status === 429) console.warn('%c[云团子] 429 = 调用太频繁或额度用完，等等再试',
         'color:#e15a5a');
