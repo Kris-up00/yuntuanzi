@@ -13,7 +13,7 @@
    Key 写在前端代码里只适合自用/送家人，公网部署不安全。
    ========================================================= */
 const ZHIPU_API_KEY = ''; // 留空：改从 localStorage 的 zhipu_key 读取，避免写进代码文件
-const ZHIPU_MODEL = 'glm-4.7-flash'; // GLM-4.7 免费版，中文对话质量更好
+const ZHIPU_MODEL = 'glm-4-flashx'; // 免费增强版，比4-flash更聪明，比4.7更稳定
 const ZHIPU_ENDPOINT = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 const ZHIPU_TTS_ENDPOINT = 'https://open.bigmodel.cn/api/paas/v4/audio/speech';
 const ZHIPU_TTS_VOICE = 'female'; // 智谱超拟人治愈女声（默认即"彤彤"），比浏览器机械音温暖太多
@@ -1186,7 +1186,7 @@ async function callLLMStream(userText, onChunk) {
       console.warn('%c[云团子] 错误详情:', 'color:#e15a5a', errBody.slice(0, 300));
       if (res.status === 401) console.warn('%c[云团子] 401 = KEY 错了或失效，去智谱后台重新拿一个',
         'color:#e15a5a');
-      if (res.status === 403) console.warn('%c[云团子] 403 = 账户没开 glm-4.7-flash 权限，去后台开通',
+      if (res.status === 403) console.warn('%c[云团子] 403 = 账户没开 glm-4-flashx 权限，去后台开通',
         'color:#e15a5a');
       if (res.status === 429) console.warn('%c[云团子] 429 = 调用太频繁或额度用完，等等再试',
         'color:#e15a5a');
