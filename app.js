@@ -462,7 +462,9 @@ function renderGarden() {
       const left = (i * 7.5 + (i % 3) * 2.5) % 95;  // 平均分布 + 一点抖动
       const scale = (0.85 + ((i * 7) % 30) / 100).toFixed(2); // 0.85-1.15
       const delay = ((i * 0.07) % 1.5).toFixed(2);
-      return `<div class="garden-flower" style="left:${left}%;--s:${scale};animation-delay:${delay}s" title="${f.name} · ${new Date(f.date).getMonth()+1}/${new Date(f.date).getDate()}">${f.emoji}</div>`;
+      const d = new Date(f.date);
+      const dateStr = (d.getMonth()+1) + '月' + d.getDate() + '日';
+      return `<div class="garden-flower" style="left:${left}%;--s:${scale};animation-delay:${delay}s" data-flower-idx="${i}" title="${f.name} · ${dateStr}">${f.emoji}</div>`;
     }).join('');
     // 花朵多于 5 朵时加一只蝴蝶飞来飞去（治愈装饰，无压力）
     const butterfly = flowers.length >= 5
@@ -496,6 +498,77 @@ function renderGarden() {
   state.garden.hasNew = false;
   saveState();
   updateGardenBadge();
+
+  // 点击花朵查看那天的记忆
+  $field.querySelectorAll('.garden-flower').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = parseInt(el.dataset.flowerIdx);
+      const flower = flowers[idx];
+      if (!flower) return;
+      showFlowerMemory(flower);
+    });
+  });
+}
+
+/* 点花朵查看那天的记忆：小确幸 + 心情 */
+function showFlowerMemory(flower) {
+  const d = new Date(flower.date);
+  const dateStr = d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日';
+  const moodLabels = { happy: '😊 开心', calm: '😌 平静', comfort: '🫂 被安慰', sleepy: '🌙 困倦', warm: '💛 温暖', default: '☁️ 陪伴' };
+  const moodLabel = moodLabels[flower.mood] || '☁️ 陪伴';
+
+  // 查找那天的小确幸
+  let memoryText = '';
+  try {
+    const mem = loadMemory();
+    const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const dayEnd = dayStart + 86400000;
+    const dayMems = mem.filter(m => m.t >= dayStart && m.t < dayEnd);
+    if (dayMems.length > 0) {
+      memoryText = dayMems.map(m => '· ' + (m.user || '').slice(0, 50)).join('\n');
+    }
+  } catch (e) {}
+
+  // 查找那天的心情记录
+  let moodLogText = '';
+  try {
+    const moodLog = JSON.parse(localStorage.getItem('yuntuzi_mood_log') || '{}');
+    const dateKey = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    if (moodLog[dateKey]) {
+      const moodMap = { 1: '😢', 2: '😕', 3: '😐', 4: '🙂', 5: '😄' };
+      moodLogText = (moodLog[dateKey].emoji || moodMap[moodLog[dateKey]] || '☁️') + ' ' + (moodLog[dateKey].note || '');
+    }
+  } catch (e) {}
+
+  const overlay = document.createElement('div');
+  overlay.className = 'family-msg-overlay';
+  let content = `<div class="family-msg-card" style="text-align:left;">
+    <div style="text-align:center;font-size:36px;margin-bottom:8px;">${flower.emoji}</div>
+    <div style="text-align:center;font-size:14px;color:#8b7ea0;margin-bottom:16px;">${dateStr} · ${moodLabel}</div>
+    <div style="font-size:15px;color:#3a3040;line-height:1.8;margin-bottom:16px;">`;
+  if (memoryText) {
+    content += `<div style="font-size:12px;color:#8b7ea0;margin-bottom:6px;">那天你和云团子说了：</div><div style="margin-bottom:14px;">${escapeHtml(memoryText)}</div>`;
+  }
+  if (moodLogText) {
+    content += `<div style="font-size:12px;color:#8b7ea0;margin-bottom:6px;">那天的心情：</div><div style="margin-bottom:14px;">${escapeHtml(moodLogText)}</div>`;
+  }
+  if (!memoryText && !moodLogText) {
+    content += `<div style="text-align:center;color:#8b7ea0;">那天云团子陪了你，<br>花开在了这里 🌷</div>`;
+  }
+  content += `</div>
+    <div style="text-align:center;">
+      <button class="family-msg-close" style="font-size:13px;color:#b0a8b8;border:1px solid #e8e0ea;border-radius:20px;padding:8px 24px;background:none;cursor:pointer;">合上 ☁️</button>
+    </div>
+  </div>`;
+  overlay.innerHTML = content;
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => overlay.classList.add('show'));
+  });
+  overlay.querySelector('.family-msg-close').addEventListener('click', () => {
+    overlay.classList.remove('show');
+    setTimeout(() => overlay.remove(), 600);
+  });
 }
 
 /* 顶部花园入口的小红点（有新花开时闪烁吸引点开） */
@@ -2582,10 +2655,27 @@ function boot() {
   resolveFileTracks();
 
   // 自动播放花海——一进来就有温暖的钢琴
+  // 浏览器自动播放策略：首次必须用户交互后才能播，监听第一次点击/触摸
   const AUTO_PLAY_TRACKS = ['pianoHaohai', 'pianoZuichang', 'timeToPaint'];
   const autoPick = AUTO_PLAY_TRACKS[Math.floor(Math.random() * AUTO_PLAY_TRACKS.length)];
+  let autoPlayed = false;
+  function tryAutoPlay() {
+    if (autoPlayed) return;
+    autoPlayed = true;
+    try { switchAmbientTrack(autoPick); } catch (e) {}
+    document.removeEventListener('click', tryAutoPlay);
+    document.removeEventListener('touchstart', tryAutoPlay);
+  }
+  // 1.5秒后先试一次（部分浏览器允许），不行就等用户第一次点击
   setTimeout(() => {
     try { switchAmbientTrack(autoPick); } catch (e) {}
+    // 如果1秒后没在播，注册监听等用户交互
+    setTimeout(() => {
+      if (!isMusicPlaying) {
+        document.addEventListener('click', tryAutoPlay, { once: true });
+        document.addEventListener('touchstart', tryAutoPlay, { once: true });
+      }
+    }, 1000);
   }, 1500);
 
   // 云团子主动陪伴：根据时间/状态给出当下适合的减压建议
