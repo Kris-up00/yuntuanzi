@@ -1965,8 +1965,6 @@ const AMBIENT_TRACKS = [
   { id: 'windChimes', name: '🎐 风铃轻响',   cat: 'zen', url: 'sounds/windChimes.mp3' },
   { id: 'singingBowl',name: '🪘 颂钵冥想',  cat: 'zen', url: 'sounds/singingBowl.mp3' },
   { id: 'binaural',   name: '🧘 双耳节拍θ波',cat: 'zen', url: 'sounds/binaural.wav' },
-  { id: 'whiteNoise', name: '⚪ 白噪音',    cat: 'zen', url: 'sounds/whiteNoise.wav' },
-  { id: 'pinkNoise',  name: '🌸 粉噪音',    cat: 'zen', url: 'sounds/pinkNoise.wav' },
   // ===== 钢琴轻音（治愈/放空）=====
   { id: 'pianoHaohai',  name: '🎹 花海·钢琴版',   cat: 'zen', url: 'sounds/piano-haohai.mp3' },
   { id: 'pianoZuichang',name: '🎹 最长的电影·钢琴', cat: 'zen', url: 'sounds/piano-zuichang.mp3' },
@@ -1982,7 +1980,7 @@ const TRACK_CATS = [
   { id: 'mine',    name: '🎵 我的音乐', tip: '你自己加的音乐，点 ➕ 添加' },
   { id: 'nature',  name: '🌿 自然氛围', tip: '猫咪·海浪·森林·篝火·风铃' },
   { id: 'rain',    name: '🌧️ 雨声助眠', tip: '下雨天/失眠夜' },
-  { id: 'zen',       name: '🧘 禅意冥想', tip: '寺庙·风铃·颂钵·白噪音·钢琴' },
+  { id: 'zen',       name: '🧘 禅意冥想', tip: '寺庙·风铃·颂钵·钢琴' },
   { id: 'yangsheng', name: '🎻 古琴养生', tip: '中医·五行·疗愈古琴' },
 ];
 
@@ -2582,6 +2580,13 @@ function boot() {
   // 迁移旧版自定义音乐：blob URL 失效的清掉；新版文件曲目从 IndexedDB 取出
   migrateOldCustomTracks();
   resolveFileTracks();
+
+  // 自动播放花海——一进来就有温暖的钢琴
+  const AUTO_PLAY_TRACKS = ['pianoHaohai', 'pianoZuichang', 'timeToPaint'];
+  const autoPick = AUTO_PLAY_TRACKS[Math.floor(Math.random() * AUTO_PLAY_TRACKS.length)];
+  setTimeout(() => {
+    try { switchAmbientTrack(autoPick); } catch (e) {}
+  }, 1500);
 
   // 云团子主动陪伴：根据时间/状态给出当下适合的减压建议
   scheduleProactiveCompanionship();
