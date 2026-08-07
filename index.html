@@ -172,9 +172,6 @@
       <textarea id="talkInput" rows="5" placeholder="今天有什么事压在心里吗？"></textarea>
       <button id="talkSend" class="primary-btn">告诉云团子</button>
       <div id="talkReply" class="reply-box hide"></div>
-      <div class="talk-tools">
-        <button id="talkVoiceBtn" class="ghost-btn talk-voice-btn">🔊 让团子念给我听</button>
-      </div>
       <!-- 智能对话开关：填智谱 Key 后启用真 AI 对话 -->
       <div class="ai-toggle">
         <span id="aiStatus">🤖 智能对话：未启用</span>
@@ -427,7 +424,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=72"></script>
+  <script src="app.js?v=73"></script>
   <script>
     // 注册 Service Worker：仅在 https/localhost 下生效，文件读取(file://)自动跳过
     if ('serviceWorker' in navigator) {

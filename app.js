@@ -1542,226 +1542,7 @@ function typewriter($el, fullText, prefix = '') {
   });
 }
 
-/* ===== 云团子的声音：用 Web Speech API 把回复念出来 ===== */
-let voiceAutoOn = false;      // 是否每次回复都自动念
-let lastReplyText = '';       // 最新一条回复，给语音按钮用
-let lastUserText = '';
-const $talkVoiceBtn = document.getElementById('talkVoiceBtn');
-
-function speakCloud(text) {
-  if (!text) return;
-  // 去掉 emoji，语音引擎念不出来会卡
-  const clean = text.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}]/gu, '').replace(/\s+/g, ' ').trim();
-  if (!clean) return;
-  // 试有道 TTS（免费温暖女声），3 秒不出来就立刻回退浏览器，不让用户干等
-  console.log('%c[云团子] TTS 优先走有道', 'color:#5a8fe1');
-  speakCloudViaYoudao(clean).catch(err => {
-    console.warn('%c[云团子] 有道失败，回退浏览器:', 'color:#e1a55a', err.message || err);
-    speakCloudLocal(clean);
-  });
-}
-// 智谱 GLM-TTS：拿音频二进制直接播
-async function speakCloudViaZhipu(text) {
-  const key = getLLMKey();
-  if (!key) throw new Error('no key');
-  // 浏览器原生语音得先停，免得两个声音叠一起
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-  // 取消上一段智谱音频
-  if (window.__cloudTTSAudio) {
-    try { window.__cloudTTSAudio.pause(); window.__cloudTTSAudio.src = ''; } catch (e) {}
-  }
-  console.log('[云团子] TTS 请求中…', text.slice(0, 30));
-  const res = await fetch(ZHIPU_TTS_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ' + key,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'glm-tts',
-      input: text.slice(0, 500),
-      voice: ZHIPU_TTS_VOICE,
-      response_format: 'mp3',
-    }),
-  });
-  console.log('[云团子] TTS 响应 HTTP ' + res.status, '类型:', res.headers.get('Content-Type'));
-  if (!res.ok) {
-    const err = new Error('TTS HTTP ' + res.status);
-    err.status = res.status;
-    let body = '';
-    try { body = await res.text(); } catch (e) {}
-    console.warn('[云团子] TTS 错误响应:', body.slice(0, 200));
-    throw err;
-  }
-  const buf = await res.arrayBuffer();
-  console.log('[云团子] TTS 收到音频大小:', buf.byteLength, 'bytes');
-  const blob = new Blob([buf], { type: 'audio/mpeg' });
-  const url = URL.createObjectURL(blob);
-  const audio = new Audio(url);
-  audio.volume = 0.95;
-  window.__cloudTTSAudio = audio;
-  audio.onended = () => { URL.revokeObjectURL(url); window.__cloudTTSAudio = null; };
-  audio.onerror = (e) => { console.warn('[云团子] 音频播放失败', e); URL.revokeObjectURL(url); window.__cloudTTSAudio = null; };
-  await audio.play();
-  console.log('%c[云团子] TTS 开始播放 ✓', 'color:#5aa86b');
-}
-
-// 有道在线 TTS：免费、稳定、不要 key、温暖女声
-// 比浏览器机械声好太多，比智谱 TTS 稳定（不需要账户开通）
-async function speakCloudViaYoudao(text) {
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-  if (window.__cloudTTSAudio) {
-    try { window.__cloudTTSAudio.pause(); window.__cloudTTSAudio.src = ''; } catch (e) {}
-    window.__cloudTTSAudio = null;
-  }
-  const t = text.slice(0, 800);
-  const url = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(t) + '&type=2';
-  console.log('[云团子] 有道 TTS 请求…', t.slice(0, 30), 'URL:', url);
-  const audio = new Audio(url);
-  audio.volume = 0.95;
-  window.__cloudTTSAudio = audio;
-  // 用 timeout 抓"卡住但不报错"的情况（有道接口不会触发 onerror，只会静默失败）
-  const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 3000));
-  audio.onended = () => { window.__cloudTTSAudio = null; };
-  audio.onerror = (e) => { console.warn('[云团子] 有道 TTS onerror', e); window.__cloudTTSAudio = null; };
-  await Promise.race([
-    audio.play(),
-    timeout
-  ]);
-  console.log('%c[云团子] 有道 TTS 播放中 ✓', 'color:#5aa86b');
-}
-
-// 全局调试函数：控制台直接调 testTTS() 看所有 TTS 方案哪个能用
-window.testTTS = async function(text) {
-  text = text || '你好，我在呢，慢慢说，我听着';
-  console.log('===== TTS 全方案测试 =====');
-  console.log('测试文本:', text);
-
-  // 方案 1：有道
-  console.log('\n--- 方案 1：有道 TTS ---');
-  try {
-    const url = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(text) + '&type=2';
-    console.log('URL:', url);
-    const audio = new Audio(url);
-    const ok = await new Promise((resolve) => {
-      audio.oncanplay = () => resolve('ok');
-      audio.onerror = (e) => resolve('error');
-      setTimeout(() => resolve('timeout'), 4000);
-      audio.load();
-    });
-    console.log('结果:', ok);
-    if (ok === 'ok') {
-      await audio.play();
-      console.log('%c✅ 有道 TTS 可用！声音开始播放', 'color:#5aa86b');
-      return 'youdao';
-    }
-  } catch (e) { console.warn('异常:', e.message); }
-
-  // 方案 2：智谱
-  const key = localStorage.getItem('zhipu_key') || '';
-  console.log('\n--- 方案 2：智谱 GLM-TTS (KEY 长度:', key.length, ') ---');
-  if (key.length > 10) {
-    for (const voice of ['female', 'tongtong', 'male']) {
-      try {
-        const res = await fetch('https://open.bigmodel.cn/api/paas/v4/audio/speech', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: 'glm-tts', input: text, voice: voice, response_format: 'mp3' }),
-        });
-        console.log('voice=' + voice + ' HTTP:', res.status);
-        if (res.ok) {
-          const buf = await res.arrayBuffer();
-          console.log('%c✅ 智谱 TTS 可用！voice=' + voice, 'color:#5aa86b');
-          new Audio(URL.createObjectURL(new Blob([buf], { type: 'audio/mpeg' }))).play();
-          return 'zhipu:' + voice;
-        } else {
-          const body = await res.text();
-          console.warn('失败:', body.slice(0, 200));
-        }
-      } catch (e) { console.warn('异常:', e.message); }
-    }
-  } else {
-    console.log('没填 KEY，跳过');
-  }
-
-  // 方案 3：浏览器原生
-  console.log('\n--- 方案 3：浏览器原生 ---');
-  if ('speechSynthesis' in window) {
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'zh-CN'; u.rate = 0.85; u.pitch = 1.15;
-    window.speechSynthesis.speak(u);
-    console.log('%c⚠️ 只能用浏览器机械声', 'color:#e1a55a');
-    return 'browser';
-  }
-  console.error('所有 TTS 都不可用');
-};
-console.log('%c[云团子] 控制台执行 testTTS() 可测所有 TTS 方案', 'color:#5a8fe1');
-
-// 回退：浏览器原生语音——调到最温柔的设置
-function speakCloudLocal(text) {
-  if (!('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'zh-CN';
-  u.rate = 0.72;   // 更慢——慢一点像在哄人，不像在念稿子
-  u.pitch = 1.35;  // 更高——更柔软、像小女孩
-  u.volume = 0.9;
-  const v = pickWarmVoice();
-  if (v) u.voice = v;
-  // 在每个标点后自动加一点停顿，让节奏更自然
-  window.speechSynthesis.speak(u);
-}
-// 挑温柔女声：按优先级找中文女声，避开男声和机械声
-function pickWarmVoice() {
-  if (!('speechSynthesis' in window)) return null;
-  const voices = window.speechSynthesis.getVoices();
-  if (!voices || !voices.length) return null;
-  // 只留中文声
-  const zh = voices.filter(v => /zh|cmn|chinese/i.test(v.lang) || /zh|中文|汉语|普通话/i.test(v.name));
-  const pool = zh.length ? zh : voices;
-  // 排除明显男声
-  const noMale = pool.filter(v => !/male|男|Yu\b|yunyang/i.test(v.name));
-  // 优先：已知温柔女声名
-  const warm = noMale.find(v => /ting|xiaoxiao|yaoyao|yunxi|hui|mei|xiaoyan|female|女|google.*普通话|google.*chinese/i.test(v.name));
-  if (warm) return warm;
-  // 次选：名字带"女"或 female 的
-  const female = noMale.find(v => /female|女/i.test(v.name));
-  if (female) return female;
-  // 再次：名字带 ting/xiao/yao/hui 的（常见温柔女声前缀）
-  const softName = noMale.find(v => /ting|xiao|yao|hui|mei|yan/i.test(v.name));
-  if (softName) return softName;
-  // 最后：任意非男声
-  return noMale[0] || pool[0] || null;
-}
-function stopSpeakCloud() {
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-  if (window.__cloudTTSAudio) {
-    try { window.__cloudTTSAudio.pause(); window.__cloudTTSAudio.src = ''; } catch (e) {}
-    window.__cloudTTSAudio = null;
-  }
-}
-// 点按钮：切换"自动念"开关，并立即念当前最新回复
-if ($talkVoiceBtn) {
-  $talkVoiceBtn.addEventListener('click', () => {
-    voiceAutoOn = !voiceAutoOn;
-    if (voiceAutoOn) {
-      $talkVoiceBtn.textContent = '🔇 团子念给我听（已开）';
-      $talkVoiceBtn.classList.add('active');
-      console.log('%c[云团子] 念给我听已开 hasLLMKey=' + hasLLMKey() + ' lastReply=' + (lastReplyText||'').slice(0,20), 'color:#5a8fe1');
-      if (lastReplyText) speakCloud(lastReplyText);
-      showBubble('好呀，我念给你听 💛', 2000);
-    } else {
-      $talkVoiceBtn.textContent = '🔊 让团子念给我听';
-      $talkVoiceBtn.classList.remove('active');
-      stopSpeakCloud();
-    }
-  });
-}
-// 预加载语音列表（部分浏览器异步加载）
-if ('speechSynthesis' in window) {
-  window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
-  window.speechSynthesis.getVoices();
-}
+/* 念给我听功能已移除 — 机械声不治愈 */
 
 /* =========================================================
    6. 陪陪你（什么都不用做）
@@ -3134,53 +2915,21 @@ let sleepUtterIdx = 0;
 let sleepTimer = null;
 let sleepSpeaking = false;
 
-// 睡前哄睡——文字版（声音功能已移除，因为浏览器机械声不治愈）
-// 每隔几秒云团子说一句哄睡的话，纯文字陪伴
+// 睡前哄睡——纯文字版，不要机械声
 function speakNextSleepLine() {
   if (!sleepSpeaking) return;
   if (sleepUtterIdx >= SLEEP_SCRIPT.length) sleepUtterIdx = 0;
   const line = SLEEP_SCRIPT[sleepUtterIdx];
-  // 走有道 TTS——免费、稳定、温暖女声，最适合哄睡
-  speakCloudViaYoudao(line).then(() => {
-    if (!sleepSpeaking) return;
-    sleepUtterIdx++;
-    if (sleepUtterIdx >= SLEEP_SCRIPT.length) sleepUtterIdx = 0;
-    sleepTimer = setTimeout(speakNextSleepLine, 1500);
-  }).catch(err => {
-    console.warn('[云团子] 哄睡有道 TTS 失败，回退浏览器语音', err);
-    speakNextSleepLineLocal(line);
-  });
-}
-function speakNextSleepLineLocal(line) {
-  if (!('speechSynthesis' in window)) return;
-  const u = new SpeechSynthesisUtterance(line);
-  u.lang = 'zh-CN';
-  u.rate = 0.72;   // 睡前更慢
-  u.pitch = 1.2;   // 柔软
-  u.volume = 0.85;
-  const v = pickWarmVoice();
-  if (v) u.voice = v;
-  u.onend = () => {
-    if (!sleepSpeaking) return;
-    sleepUtterIdx++;
-    if (sleepUtterIdx >= SLEEP_SCRIPT.length) sleepUtterIdx = 0;
-    sleepTimer = setTimeout(speakNextSleepLine, 1500);
-  };
-  window.speechSynthesis.speak(u);
+  showBubble(line, 4000);
+  setMood('sleepy', 3800);
+  sleepUtterIdx++;
+  if (sleepUtterIdx >= SLEEP_SCRIPT.length) sleepUtterIdx = 0;
+  sleepTimer = setTimeout(speakNextSleepLine, 4000);
 }
 if ($sleepVoiceBtn) {
   $sleepVoiceBtn.addEventListener('click', () => {
-    if (!('speechSynthesis' in window) && !hasLLMKey()) {
-      showBubble('你的浏览器不支持语音朗读 🌙', 2500);
-      return;
-    }
     sleepSpeaking = true;
     sleepUtterIdx = 0;
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    if (window.__cloudTTSAudio) {
-      try { window.__cloudTTSAudio.pause(); window.__cloudTTSAudio.src = ''; } catch (e) {}
-      window.__cloudTTSAudio = null;
-    }
     $sleepVoiceBtn.classList.add('hide');
     if ($sleepVoiceStop) $sleepVoiceStop.classList.remove('hide');
     speakNextSleepLine();
@@ -3191,11 +2940,6 @@ if ($sleepVoiceStop) {
   $sleepVoiceStop.addEventListener('click', () => {
     sleepSpeaking = false;
     if (sleepTimer) clearTimeout(sleepTimer);
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    if (window.__cloudTTSAudio) {
-      try { window.__cloudTTSAudio.pause(); window.__cloudTTSAudio.src = ''; } catch (e) {}
-      window.__cloudTTSAudio = null;
-    }
     $sleepVoiceStop.classList.add('hide');
     if ($sleepVoiceBtn) $sleepVoiceBtn.classList.remove('hide');
   });
