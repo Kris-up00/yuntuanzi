@@ -396,7 +396,6 @@ function initGreeting() {
    ========================================================= */
 const modals = {
   talk:    document.getElementById('talkModal'),
-  breathe: null, // 陪陪你已移除
   joy:     document.getElementById('joyModal'),
   shop:    document.getElementById('shopModal'),
   sleep:   document.getElementById('sleepModal'),
@@ -407,6 +406,7 @@ const modals = {
   garden:  document.getElementById('gardenModal'),
 };
 Object.values(modals).forEach(m => {
+  if (!m) return; // 跳过已移除的弹窗
   m.addEventListener('click', (e) => {
     if (e.target === m || e.target.hasAttribute('data-close')) closeAllModals();
   });
@@ -2536,26 +2536,26 @@ function boot() {
   applyEquipped();
   initGreeting();
   restoreMusicUI();
-  // initStarryScene(); // 暂时禁用，排查点击问题
+  initStarryScene();
   // 清理历史上被错误抓成名字的记忆（如"谁""什么"），让云团子真正记得你
   cleanupBadMemory();
   // 迁移旧版自定义音乐：blob URL 失效的清掉；新版文件曲目从 IndexedDB 取出
   migrateOldCustomTracks();
   resolveFileTracks();
 
-  // 自动播放暂时禁用，排查点击问题
-  // const AUTO_PLAY_TRACKS = ['pianoHaohai', 'pianoZuichang', 'timeToPaint'];
-  // const autoPick = AUTO_PLAY_TRACKS[Math.floor(Math.random() * AUTO_PLAY_TRACKS.length)];
-  // let autoPlayed = false;
-  // function tryAutoPlay() {
-  //   if (autoPlayed) return;
-  //   autoPlayed = true;
-  //   document.removeEventListener('pointerdown', tryAutoPlay);
-  //   setTimeout(() => {
-  //     try { switchAmbientTrack(autoPick); } catch (e) {}
-  //   }, 300);
-  // }
-  // document.addEventListener('pointerdown', tryAutoPlay, { once: false, passive: true });
+  // 自动播放花海——等用户第一次交互后播放
+  const AUTO_PLAY_TRACKS = ['pianoHaohai', 'pianoZuichang', 'timeToPaint'];
+  const autoPick = AUTO_PLAY_TRACKS[Math.floor(Math.random() * AUTO_PLAY_TRACKS.length)];
+  let autoPlayed = false;
+  function tryAutoPlay() {
+    if (autoPlayed) return;
+    autoPlayed = true;
+    document.removeEventListener('pointerdown', tryAutoPlay);
+    setTimeout(() => {
+      try { switchAmbientTrack(autoPick); } catch (e) {}
+    }, 300);
+  }
+  document.addEventListener('pointerdown', tryAutoPlay, { passive: true });
 
   // 云团子主动陪伴：根据时间/状态给出当下适合的减压建议
   scheduleProactiveCompanionship();
