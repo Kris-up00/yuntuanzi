@@ -2177,6 +2177,11 @@ setInterval(blinkSpirit, 5000 + Math.random() * 3000);
   let touchCount = 0;
   spirit.addEventListener('click', (e) => {
     touchCount++;
+    // 被戳动画
+    spirit.classList.remove('poked');
+    void spirit.offsetWidth; // 强制重绘
+    spirit.classList.add('poked');
+    setTimeout(() => spirit.classList.remove('poked'), 600);
     // 涟漪
     const r = document.createElement('div');
     r.className = 'ripple';

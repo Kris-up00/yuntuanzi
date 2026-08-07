@@ -500,7 +500,7 @@ body.night .stars-layer { opacity: 1; }
   position: relative;
   width: 200px;
   height: 180px;
-  animation: floatY 4s ease-in-out infinite;
+  animation: floatY 6s ease-in-out infinite;
   z-index: 2;
   cursor: pointer;
   filter: drop-shadow(0 18px 28px rgba(180, 170, 210, 0.28));
@@ -510,6 +510,23 @@ body.night .stars-layer { opacity: 1; }
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-12px); }
 }
+
+/* 被戳——抖一下+缩 */
+@keyframes pokeBounce {
+  0%   { transform: scale(1) rotate(0deg); }
+  20%  { transform: scale(0.92) rotate(-3deg); }
+  40%  { transform: scale(1.05) rotate(2deg); }
+  60%  { transform: scale(0.97) rotate(-1deg); }
+  80%  { transform: scale(1.02) rotate(0deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.spirit.poked {
+  animation: pokeBounce .6s ease-out;
+}
+/* 被戳时眨眼 */
+.spirit.poked .eye { height: 3px; border-radius: 999px; }
+.spirit.poked .eye .pupil { display: none; }
+.spirit.poked .mouth { border-radius: 50%; width: 14px; height: 14px; border: 2px solid #5c4033; border-top: 2px solid #5c4033; }
 
 /* 云身体——多个重叠圆形组成蓬松感 */
 .body {
@@ -552,12 +569,12 @@ body.night .stars-layer { opacity: 1; }
     inset 6px 8px 12px rgba(255, 255, 255, 0.85),
     0 15px 30px rgba(180, 180, 210, 0.18);
   z-index: 1;
-  animation: bodyBreathe 5s ease-in-out infinite;
+  animation: bodyBreathe 7s ease-in-out infinite;
   transform-origin: 50% 60%;
 }
 @keyframes bodyBreathe {
   0%, 100% { transform: translate(-50%, -50%) scale(1); }
-  50%      { transform: translate(-50%, -50%) scale(1.025); }
+  50%      { transform: translate(-50%, -50%) scale(1.03); }
 }
 .body-blob {
   position: absolute;
@@ -626,13 +643,13 @@ body.night .stars-layer { opacity: 1; }
 .eye .pupil {
   position: absolute;
   inset: 2px;
-  background: #3a3a4c;
+  background: #5c4033;
   border-radius: 50%;
 }
 .eye.closed {
   height: 3px;
   border-radius: 999px;
-  background: #3a3a4c;
+  background: #5c4033;
 }
 .eye.closed::after,
 .eye.closed::before,
@@ -645,7 +662,7 @@ body.night .stars-layer { opacity: 1; }
   transform: translateX(-50%);
   width: 20px;
   height: 12px;
-  border: 2.5px solid #3a3a4c;
+  border: 2.5px solid #5c4033;
   border-top: none;
   border-radius: 0 0 20px 20px;
   z-index: 3;
