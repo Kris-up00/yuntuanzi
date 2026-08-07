@@ -373,9 +373,11 @@ body.night .stars-layer { opacity: 1; }
   margin-bottom: 14px;
   flex: 1 1 auto;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;   /* iOS 顺滑滚动 */
-  overscroll-behavior: contain;        /* 防止滚动传染到背景 */
-  min-height: 0;                       /* flex 子项允许收缩，滚动才生效 */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  min-height: 0;
+  max-height: 50vh;
+  padding-right: 4px;
 }
 .track-btn {
   padding: 9px 12px;
