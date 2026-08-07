@@ -1974,7 +1974,7 @@ body.night .spirit-glow {
 /* ---------- 暖心提醒 ---------- */
 /* 暖心提醒相关样式已移除 */
 
-/* ---------- 家人留言卡片 ---------- */
+/* ---------- 家人留言信封 ---------- */
 .family-msg-overlay {
   position: fixed;
   inset: 0;
@@ -1982,46 +1982,77 @@ body.night .spirit-glow {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(30, 30, 50, 0.35);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(30, 30, 50, 0.55);
+  /* 毛玻璃：不支持的浏览器会自动降级为纯色蒙层 */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   opacity: 0;
-  transition: opacity .6s ease;
+  transition: opacity .8s ease;
   padding: 20px;
 }
 .family-msg-overlay.show { opacity: 1; }
-.family-msg-card {
-  background: linear-gradient(160deg, #fffef8, #fdf6ee, #f0f4ff);
-  border-radius: 20px;
-  padding: 32px 24px 28px;
+
+/* 信封容器 */
+.family-msg-envelope {
+  position: relative;
   max-width: 340px;
   width: 100%;
+}
+
+/* 信封盖——展开动画 */
+.family-msg-flap {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 50%;
+  background: linear-gradient(160deg, #f5ead5, #e8d5b0);
+  border-radius: 16px 16px 0 0;
+  z-index: 3;
+  transform-origin: top center;
+  transform: rotateX(0deg);
+  transition: transform 1.2s cubic-bezier(.34,1.56,.64,1) .3s;
+  box-shadow: 0 2px 8px rgba(180,160,120,0.2);
+}
+.family-msg-overlay.show .family-msg-flap {
+  transform: rotateX(180deg);
+}
+
+/* 留言卡片 */
+.family-msg-card {
+  position: relative;
+  background: linear-gradient(160deg, #fffef8, #fdf6ee, #f0f4ff);
+  border-radius: 16px;
+  padding: 36px 24px 28px;
   text-align: center;
-  box-shadow: 0 20px 60px rgba(80, 60, 100, 0.18), 0 0 0 1px rgba(255,255,255,0.6) inset;
-  transform: translateY(20px) scale(0.96);
-  transition: transform .5s cubic-bezier(.34,1.56,.64,1);
+  box-shadow: 0 20px 60px rgba(80, 60, 100, 0.25), 0 0 0 1px rgba(255,255,255,0.6) inset;
+  z-index: 2;
+  /* 初始隐藏，等信封盖打开后再显示 */
+  opacity: 0;
+  transform: translateY(30px) scale(0.9);
+  transition: opacity .8s ease .8s, transform .8s cubic-bezier(.34,1.56,.64,1) .8s;
 }
 .family-msg-overlay.show .family-msg-card {
+  opacity: 1;
   transform: translateY(0) scale(1);
 }
+
 .family-msg-icon {
   font-size: 40px;
   margin-bottom: 12px;
-  animation: msgFloat 3s ease-in-out infinite;
+  animation: msgFloat 3s ease-in-out infinite 1.5s;
 }
 @keyframes msgFloat {
   0%,100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }
 }
 .family-msg-title {
-  font-size: 16px;
+  font-size: 15px;
   color: #8b7ea0;
   margin-bottom: 16px;
   letter-spacing: 1px;
 }
 .family-msg-text {
   font-size: 17px;
-  line-height: 1.8;
+  line-height: 1.9;
   color: #3a3040;
   font-weight: 500;
   margin-bottom: 24px;
@@ -2031,10 +2062,13 @@ body.night .spirit-glow {
   font-size: 13px;
   color: #b0a8b8;
   background: none;
-  border: none;
-  padding: 8px 20px;
+  border: 1px solid #e8e0ea;
+  border-radius: 20px;
+  padding: 8px 24px;
   cursor: pointer;
+  transition: all .3s;
 }
+.family-msg-close:active { background: #f5f0f5; }
 
 /* ---------- 音乐面板：分组列表 ---------- */
 .track-group { margin-bottom: 14px; }

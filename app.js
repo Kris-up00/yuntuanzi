@@ -3091,9 +3091,10 @@ $msgClear.addEventListener('click', async () => {
 function showFamilyMessageIfAny() {
   const msg = localStorage.getItem(MSG_KEY);
   if (!msg) return;
-  // 标记本次已展示过，不重复弹
-  if (sessionStorage.getItem('yztz_msg_shown')) return;
-  sessionStorage.setItem('yztz_msg_shown', '1');
+  // 每条留言只展示一次（改留言后才会再弹）
+  const shownKey = 'yztz_msg_shown_' + (msg || '').slice(0, 20);
+  if (localStorage.getItem(shownKey)) return;
+  localStorage.setItem(shownKey, '1');
 
   setTimeout(() => {
     // 第一步：云团子先说一句话，制造期待
@@ -3102,26 +3103,32 @@ function showFamilyMessageIfAny() {
     }
     if (typeof setMood === 'function') setMood('comfort', 3000);
 
-    // 第二步：3秒后留言卡片缓缓展开
+    // 第二步：4秒后信封缓缓展开
     setTimeout(() => {
       const overlay = document.createElement('div');
       overlay.className = 'family-msg-overlay';
       overlay.innerHTML = `
-        <div class="family-msg-card">
-          <div class="family-msg-icon">💌</div>
-          <div class="family-msg-title">有人托云团子带的话</div>
-          <div class="family-msg-text">${escapeHtml(msg)}</div>
-          <button class="family-msg-close">知道了，谢谢 ☁️</button>
+        <div class="family-msg-envelope">
+          <div class="family-msg-flap"></div>
+          <div class="family-msg-card">
+            <div class="family-msg-icon">💌</div>
+            <div class="family-msg-title">有人托云团子带的话</div>
+            <div class="family-msg-text">${escapeHtml(msg)}</div>
+            <button class="family-msg-close">知道了，谢谢 ☁️</button>
+          </div>
         </div>
       `;
       document.body.appendChild(overlay);
-      requestAnimationFrame(() => overlay.classList.add('show'));
+      // 触发动画
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => overlay.classList.add('show'));
+      });
       overlay.querySelector('.family-msg-close').addEventListener('click', () => {
         overlay.classList.remove('show');
-        setTimeout(() => overlay.remove(), 600);
+        setTimeout(() => overlay.remove(), 800);
       });
       if (typeof setMood === 'function') setMood('happy', 5000);
-    }, 2800);
+    }, 3000);
   }, 2000);
 }
 
