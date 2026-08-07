@@ -2459,7 +2459,7 @@ function scheduleProactiveCompanionship() {
   } else if (hour < 14) {
     tip = '中午啦，有没有好好吃饭？吃完了可以来写一件小确幸 ✨';
   } else if (hour < 18) {
-    tip = '下午容易犯困，累的话就来摸摸我，或者让我陪你待一会儿～';
+    tip = '下午容易犯困，累的话就来摸摸我，或者和我说说话～';
   } else if (hour < 23) {
     tip = '今天辛苦啦～有什么压在心里的，可以告诉我，我都听着 🫂';
   } else {
@@ -2633,15 +2633,17 @@ function renderMsg() {
 async function cloudLoadMsg() {
   try {
     const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 8000);
-    // 加 ?t=时间戳 防止 CDN 缓存
+    const tid = setTimeout(() => ctrl.abort(), 15000);
     const res = await fetch(GIST_RAW + '?t=' + Date.now(), { signal: ctrl.signal });
     clearTimeout(tid);
     if (!res.ok) return null;
     const data = await res.json();
     return data.msg || null;
   } catch (e) {
-    console.warn('[云团子] 拉取云端留言失败', e);
+    // AbortError是超时导致的，静默处理，不刷屏
+    if (e && e.name !== 'AbortError') {
+      console.warn('[云团子] 拉取云端留言失败', e);
+    }
     return null;
   }
 }
@@ -2652,7 +2654,7 @@ async function cloudSaveMsg(text) {
   if (!token) return { ok: false, needToken: true };
   try {
     const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 10000);
+    const tid = setTimeout(() => ctrl.abort(), 15000);
     const res = await fetch('https://api.github.com/gists/' + GIST_ID, {
       method: 'PATCH',
       headers: {
@@ -2669,6 +2671,7 @@ async function cloudSaveMsg(text) {
     if (res.status === 401 || res.status === 403) return { ok: false, badToken: true };
     return { ok: res.ok };
   } catch (e) {
+    if (e && e.name === 'AbortError') return { ok: false, error: 'timeout' };
     return { ok: false, error: e };
   }
 }
@@ -2679,7 +2682,7 @@ async function cloudClearMsg() {
   if (!token) return { ok: false, needToken: true };
   try {
     const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 10000);
+    const tid = setTimeout(() => ctrl.abort(), 15000);
     const res = await fetch('https://api.github.com/gists/' + GIST_ID, {
       method: 'PATCH',
       headers: {
@@ -2693,7 +2696,10 @@ async function cloudClearMsg() {
     });
     clearTimeout(tid);
     return { ok: res.ok };
-  } catch (e) { return { ok: false, error: e }; }
+  } catch (e) {
+    if (e && e.name === 'AbortError') return { ok: false, error: 'timeout' };
+    return { ok: false, error: e };
+  }
 }
 
 /* 打开 app 时：先读本地，再异步从云端拉最新 */
