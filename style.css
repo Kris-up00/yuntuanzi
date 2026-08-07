@@ -1938,6 +1938,12 @@ body.night .spirit-glow {
 }
 .mem-item.perm-box .mem-user::before { content: '💛 '; }
 .mem-clear-btn { margin-top: 14px; width: 100%; }
+.memory-export-row {
+  display: flex; gap: 8px; margin-top: 10px;
+}
+.mem-export-btn {
+  flex: 1; font-size: 13px; padding: 8px 6px;
+}
 .memory-tip {
   font-size: 12px;
   color: var(--c-text-soft);

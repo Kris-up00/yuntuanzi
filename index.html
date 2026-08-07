@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>云团子 · 你的小陪伴</title>
-  <link rel="stylesheet" href="style.css?v=32" />
+  <link rel="stylesheet" href="style.css?v=33" />
 
   <!-- PWA：可装到桌面、离线可用 -->
   <link rel="manifest" href="manifest.json" />
@@ -271,6 +271,11 @@
       <div class="memory-tip">
         💡 多和我说说话，我就能记住更多关于你的事；这些记忆只在你这台手机里，别人看不到。
       </div>
+      <div class="memory-export-row">
+        <button id="memExportBtn" class="ghost-btn mem-export-btn">📤 导出记忆</button>
+        <button id="memImportBtn" class="ghost-btn mem-export-btn">📥 导入记忆</button>
+        <input type="file" id="memImportFile" accept=".json" style="display:none" />
+      </div>
     </div>
   </div>
 
@@ -455,7 +460,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=63"></script>
+  <script src="app.js?v=64"></script>
   <script>
     // 注册 Service Worker：仅在 https/localhost 下生效，文件读取(file://)自动跳过
     if ('serviceWorker' in navigator) {

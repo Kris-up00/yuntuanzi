@@ -13,7 +13,7 @@
    Key 写在前端代码里只适合自用/送家人，公网部署不安全。
    ========================================================= */
 const ZHIPU_API_KEY = ''; // 留空：改从 localStorage 的 zhipu_key 读取，避免写进代码文件
-const ZHIPU_MODEL = 'glm-4-flash'; // 永久免费，权限最广，几乎所有账户都能用
+const ZHIPU_MODEL = 'glm-4.7-flash'; // GLM-4.7 免费版，中文对话质量更好
 const ZHIPU_ENDPOINT = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 const ZHIPU_TTS_ENDPOINT = 'https://open.bigmodel.cn/api/paas/v4/audio/speech';
 const ZHIPU_TTS_VOICE = 'female'; // 智谱超拟人治愈女声（默认即"彤彤"），比浏览器机械音温暖太多
@@ -745,7 +745,7 @@ function loadChatHistory() {
   catch (e) { return []; }
 }
 function saveChatHistory(arr) {
-  try { localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(arr.slice(-10))); } catch (e) {}
+  try { localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(arr.slice(-30))); } catch (e) {}
 }
 // 启动时把上次没聊完的上下文加载回来，别让刷新把记忆打断
 (function restoreChatHistory() {
@@ -1147,7 +1147,7 @@ async function callLLMStream(userText, onChunk) {
     memHint = '\n\n【你记住的关于对方的事】（这是背景，不是当前对话。对方问"我叫什么/我是谁/你记得我吗"时直接用这些回答；对方没主动提及时不要主动提起）\n对方' + facts.join('；') + '。';
   }
   const sysMsg = { role: 'system', content: CLOUD_SYSTEM_PROMPT + memHint };
-  const recent = llmHistory.slice(-10);
+  const recent = llmHistory.slice(-20);
   const messages = [sysMsg, ...recent];
   try {
     // 15 秒超时保护：大模型慢一点别急着判失败，给足思考时间显得更聪明
@@ -1175,7 +1175,7 @@ async function callLLMStream(userText, onChunk) {
       console.warn('%c[云团子] 错误详情:', 'color:#e15a5a', errBody.slice(0, 300));
       if (res.status === 401) console.warn('%c[云团子] 401 = KEY 错了或失效，去智谱后台重新拿一个',
         'color:#e15a5a');
-      if (res.status === 403) console.warn('%c[云团子] 403 = 账户没开 glm-4-flash 权限，去后台开通',
+      if (res.status === 403) console.warn('%c[云团子] 403 = 账户没开 glm-4.7-flash 权限，去后台开通',
         'color:#e15a5a');
       if (res.status === 429) console.warn('%c[云团子] 429 = 调用太频繁或额度用完，等等再试',
         'color:#e15a5a');
@@ -3296,6 +3296,83 @@ function renderMemoryList() {
     }
   });
 }
+
+/* =========================================================
+   记忆导出/导入——换手机不丢
+   --------------------------------------------------------
+   导出：把所有云团子相关的 localStorage 数据打包成 JSON 下载
+   导入：上传 JSON 文件，恢复全部数据
+   ========================================================= */
+function exportAllData() {
+  const keys = [
+    'yuntuzi_save_v3', 'yuntuzi_memory', 'yuntuzi_facts',
+    'yuntuzi_chat_history', 'yztz_memory_greeting_cache',
+    'yuntuzi_family_msg', 'yztz_gist_token', 'yztz_msg_synced_flag',
+    'zhipu_key', 'yuntuzi_mood_log',
+    'yuntuzi_custom_tracks_v2', 'yuntuzi_family_voice',
+    'yztz_care_settings',
+  ];
+  const data = {};
+  for (const k of keys) {
+    try {
+      const v = localStorage.getItem(k);
+      if (v !== null) data[k] = v;
+    } catch (e) {}
+  }
+  data.__exportTime = new Date().toISOString();
+  data.__version = '1.0';
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const d = new Date();
+  a.download = `云团子记忆_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showBubble('记忆已经导出啦，换个手机导入就能接着聊 ☁️', 3500);
+}
+
+function importAllData(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.__version) {
+        alert('这个文件看起来不是云团子的记忆文件哦');
+        return;
+      }
+      if (!confirm('导入会覆盖当前的记忆，确定吗？')) return;
+      for (const k in data) {
+        if (k.startsWith('__')) continue;
+        try { localStorage.setItem(k, data[k]); } catch (err) {}
+      }
+      showBubble('记忆恢复啦～云团子又想起来了 💛', 3500);
+      // 刷新状态
+      state = loadState();
+      updateHUD();
+      applyEquipped();
+      renderMemoryList();
+      setTimeout(() => { if (typeof recallMemoryOnBoot === 'function') recallMemoryOnBoot(); }, 1000);
+    } catch (err) {
+      alert('文件读取出错了，可能不是正确的记忆文件');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// 绑定导出/导入按钮
+document.addEventListener('DOMContentLoaded', () => {
+  const $export = document.getElementById('memExportBtn');
+  const $import = document.getElementById('memImportBtn');
+  const $importFile = document.getElementById('memImportFile');
+  if ($export) $export.addEventListener('click', exportAllData);
+  if ($import) $import.addEventListener('click', () => { if ($importFile) $importFile.click(); });
+  if ($importFile) $importFile.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files[0]) importAllData(e.target.files[0]);
+  });
+});
 /* 开场问候：基于记忆让云团子说一句具体的话，而不是套话"我一直在想你"
    三级降级，保证永远有话可说、不卡顿、不烧太多 API：
    1) 有 Key 且近 1 小时没生成过 → 调 LLM 基于记忆生成一句具体问候，结果缓存到 localStorage
@@ -3343,15 +3420,22 @@ function ruleBasedGreeting(name, topic) {
   return '你回来啦 ☁️';
 }
 
-/* LLM 生成开场：读最近 3 条记忆，生成一句具体问候 */
+/* LLM 生成开场：读最近 3 条记忆 + 最近对话历史，生成一句具体问候 */
 async function generateMemoryGreeting() {
   const key = getLLMKey();
   const mem = loadMemory();
+  const chatHistory = loadChatHistory();
   const permFacts = loadFacts();
-  if (key.length <= 10 || mem.length === 0) return null;
+  if (key.length <= 10 || (mem.length === 0 && chatHistory.length === 0)) return null;
 
-  // 喂给 LLM 的记忆摘要：最近 3 条用户说的话
-  const recentUser = mem.slice(-3).map((m, i) => (i + 1) + '. ' + (m.user || '').slice(0, 60)).join('\n');
+  // 优先用对话历史（更贴近最近聊的），其次用记忆
+  let recentUser = '';
+  const chatMsgs = chatHistory.filter(m => m.role === 'user' && m.content).slice(-3);
+  if (chatMsgs.length > 0) {
+    recentUser = chatMsgs.map((m, i) => (i + 1) + '. ' + m.content.slice(0, 60)).join('\n');
+  } else {
+    recentUser = mem.slice(-3).map((m, i) => (i + 1) + '. ' + (m.user || '').slice(0, 60)).join('\n');
+  }
   let factStr = '';
   if (permFacts['名字']) factStr += '对方称呼：' + permFacts['名字'] + '\n';
   if (permFacts['家人'] && permFacts['家人'].length) factStr += '家人：' + permFacts['家人'].join('、') + '\n';
@@ -3401,9 +3485,23 @@ async function generateMemoryGreeting() {
 function recallMemoryOnBoot() {
   const permFacts = loadFacts();
   const mem = loadMemory();
-  if (mem.length === 0 && Object.keys(permFacts).length === 0) return;
+  const chatHistory = loadChatHistory();
+  // 没有任何记忆就不触发
+  if (mem.length === 0 && Object.keys(permFacts).length === 0 && chatHistory.length === 0) return;
   const name = permFacts['名字'];
-  const topic = pickMemoryTopic();
+  // 优先从对话历史里抽话题（最近聊的），其次从记忆里抽
+  let topic = null;
+  if (chatHistory.length > 0) {
+    // 从最近的用户消息里找话题
+    for (let i = chatHistory.length - 1; i >= 0; i--) {
+      const msg = chatHistory[i];
+      if (msg.role === 'user' && msg.content && msg.content.length >= 4) {
+        topic = msg.content.replace(/^[，。！？\s]+|[，。！？\s]+$/g, '').slice(0, 16);
+        if (topic.length >= 4) break;
+      }
+    }
+  }
+  if (!topic) topic = pickMemoryTopic();
 
   setTimeout(async () => {
     // 优先用缓存的 LLM 问候（1 小时内）
@@ -3414,7 +3512,7 @@ function recallMemoryOnBoot() {
       showBubble(greeting, 5000);
       setMood('happy', 5000);
       // 后台异步生成 LLM 问候，存缓存下次用
-      if (hasLLMKey() && mem.length > 0) {
+      if (hasLLMKey() && (mem.length > 0 || chatHistory.length > 0)) {
         const llmText = await generateMemoryGreeting();
         if (llmText) {
           saveCachedGreeting(llmText);
