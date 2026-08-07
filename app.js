@@ -263,7 +263,10 @@ function updateHUD() {
 function gainReward({ exp = 0, stars = 0, mood = 'default' }) {
   state.stars += stars;
   if (exp > 0) waterGarden(exp * 4, mood); // exp 值转成浇水量（×4 让进度感清晰）
-  if (stars > 0) showRewardFx(stars);
+  if (stars > 0) {
+    showRewardFx(stars);
+    addCollectStar();
+  }
   updateHUD();
   saveState();
 }
@@ -2533,6 +2536,7 @@ function boot() {
   applyEquipped();
   initGreeting();
   restoreMusicUI();
+  initStarryScene();
   // 清理历史上被错误抓成名字的记忆（如"谁""什么"），让云团子真正记得你
   cleanupBadMemory();
   // 迁移旧版自定义音乐：blob URL 失效的清掉；新版文件曲目从 IndexedDB 取出
@@ -3421,6 +3425,129 @@ function playFamilyVoiceIfAny() {
 refreshVoiceUI();
 
 /* 暖心提醒已移除 —— 关心能力融入对话，云团子会在聊天中自然带出 */
+
+/* =========================================================
+   星空场景 —— 树·萤火虫·收集星星
+   --------------------------------------------------------
+   每次互动（说话/小确幸/留言）= 夜空多一颗星
+   星星按陪伴天数散布，点击会微微闪亮
+   ========================================================= */
+function initStarryScene() {
+  const $starLayer = document.getElementById('starLayer');
+  const $canvas = document.getElementById('fireflyCanvas');
+  if (!$starLayer || !$canvas) return;
+
+  // 背景星星（固定，随机散布）
+  const bgStarCount = 40;
+  for (let i = 0; i < bgStarCount; i++) {
+    const s = document.createElement('div');
+    s.className = 'star-dot' + (Math.random() > 0.7 ? ' bright' : '');
+    s.style.left = (Math.random() * 100) + '%';
+    s.style.top = (Math.random() * 80) + '%';
+    s.style.setProperty('--dur', (2 + Math.random() * 4) + 's');
+    s.style.setProperty('--delay', (Math.random() * 3) + 's');
+    $starLayer.appendChild(s);
+  }
+
+  // 收集的星星（基于陪伴天数+互动次数）
+  const days = getDaysWithCloud();
+  const collectCount = Math.min(days + state.totalTalks, 60);
+  for (let i = 0; i < collectCount; i++) {
+    const s = document.createElement('div');
+    s.className = 'star-dot collect-star';
+    s.style.left = (10 + Math.random() * 80) + '%';
+    s.style.top = (5 + Math.random() * 60) + '%';
+    s.style.setProperty('--dur', (3 + Math.random() * 3) + 's');
+    s.style.setProperty('--delay', (Math.random() * 4) + 's');
+    $starLayer.appendChild(s);
+  }
+
+  // 萤火虫
+  const ctx = $canvas.getContext('2d');
+  let fireflies = [];
+  let W, H;
+
+  function resize() {
+    W = $canvas.width = $canvas.offsetWidth;
+    H = $canvas.height = $canvas.offsetHeight;
+    fireflies = [];
+    const count = Math.min(15, Math.floor(W / 40));
+    for (let i = 0; i < count; i++) {
+      fireflies.push({
+        x: Math.random() * W,
+        y: Math.random() * H * 0.8 + H * 0.1,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.3,
+        r: 1.5 + Math.random() * 1.5,
+        glow: Math.random() * Math.PI * 2,
+        glowSpeed: 0.02 + Math.random() * 0.03,
+        hue: 50 + Math.random() * 20,
+      });
+    }
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function animateFireflies() {
+    ctx.clearRect(0, 0, W, H);
+    for (const f of fireflies) {
+      f.x += f.vx;
+      f.y += f.vy;
+      f.glow += f.glowSpeed;
+      // 边界
+      if (f.x < 0) f.x = W;
+      if (f.x > W) f.x = 0;
+      if (f.y < 0) f.y = H;
+      if (f.y > H) f.y = 0;
+      // 随机改变方向
+      if (Math.random() < 0.02) {
+        f.vx = (Math.random() - 0.5) * 0.6;
+        f.vy = (Math.random() - 0.5) * 0.4;
+      }
+      const alpha = 0.4 + Math.sin(f.glow) * 0.4;
+      const glowR = f.r * (3 + Math.sin(f.glow) * 2);
+      // 外层光晕
+      const grad = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, glowR);
+      grad.addColorStop(0, `hsla(${f.hue}, 100%, 70%, ${alpha * 0.6})`);
+      grad.addColorStop(0.5, `hsla(${f.hue}, 100%, 60%, ${alpha * 0.2})`);
+      grad.addColorStop(1, 'transparent');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, glowR, 0, Math.PI * 2);
+      ctx.fill();
+      // 核心亮点
+      ctx.fillStyle = `hsla(${f.hue}, 100%, 85%, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    requestAnimationFrame(animateFireflies);
+  }
+  animateFireflies();
+}
+
+/* 互动时加一颗星 */
+function addCollectStar() {
+  const $starLayer = document.getElementById('starLayer');
+  if (!$starLayer) return;
+  const s = document.createElement('div');
+  s.className = 'star-dot collect-star';
+  s.style.left = (10 + Math.random() * 80) + '%';
+  s.style.top = (5 + Math.random() * 60) + '%';
+  s.style.setProperty('--dur', (3 + Math.random() * 3) + 's');
+  s.style.setProperty('--delay', '0s');
+  s.style.opacity = '0';
+  s.style.transform = 'scale(0)';
+  $starLayer.appendChild(s);
+  requestAnimationFrame(() => {
+    s.style.transition = 'opacity 1s, transform 1s cubic-bezier(.34,1.56,.64,1)';
+    s.style.opacity = '';
+    s.style.transform = 'scale(1)';
+  });
+  // 限制DOM数量
+  const stars = $starLayer.querySelectorAll('.collect-star');
+  if (stars.length > 80) stars[0].remove();
+}
 
 boot();
 

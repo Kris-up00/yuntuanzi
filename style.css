@@ -424,6 +424,102 @@ body.night .stars-layer { opacity: 1; }
 }
 
 /* ---------- 主舞台 ---------- */
+/* ---------- 星空场景 ---------- */
+.starry-scene {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40vh;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+/* 星星层 */
+.star-layer {
+  position: absolute;
+  inset: 0;
+}
+.star-dot {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #fff;
+  border-radius: 50%;
+  opacity: 0;
+  animation: starTwinkle var(--dur, 3s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+  box-shadow: 0 0 4px rgba(255,255,200,0.6);
+}
+.star-dot.bright {
+  width: 3px;
+  height: 3px;
+  box-shadow: 0 0 6px rgba(255,240,200,0.8), 0 0 12px rgba(255,220,180,0.3);
+}
+.star-dot.collect-star {
+  width: 5px;
+  height: 5px;
+  background: #ffd9a0;
+  box-shadow: 0 0 8px rgba(255,200,120,0.8), 0 0 16px rgba(255,180,80,0.4);
+}
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+/* 萤火虫canvas */
+.firefly-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* 树剪影 */
+.tree-silhouette {
+  position: absolute;
+  bottom: 0;
+  font-size: 80px;
+  line-height: 1;
+  filter: brightness(0) opacity(0.35);
+  z-index: 1;
+  animation: treeSway 8s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+.tree-left {
+  left: -10px;
+  bottom: -5px;
+  font-size: 90px;
+  animation-delay: 0s;
+}
+.tree-right {
+  right: -15px;
+  bottom: -8px;
+  font-size: 70px;
+  animation-delay: -3s;
+  animation-duration: 10s;
+}
+body.night .tree-silhouette {
+  filter: brightness(0) opacity(0.5);
+}
+@keyframes treeSway {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(1.5deg); }
+}
+/* 草地剪影 */
+.grass-silhouette {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(180deg, transparent 0%, rgba(40,50,40,0.15) 30%, rgba(30,40,30,0.3) 100%);
+  z-index: 2;
+}
+body.night .grass-silhouette {
+  background: linear-gradient(180deg, transparent 0%, rgba(20,30,25,0.4) 30%, rgba(15,25,20,0.6) 100%);
+}
+body.night .starry-scene { opacity: 1; }
+body:not(.night) .starry-scene { opacity: 0.5; }
+
 .stage {
   height: 100%;
   display: flex;
