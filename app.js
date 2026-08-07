@@ -2544,28 +2544,19 @@ function boot() {
   resolveFileTracks();
 
   // 自动播放花海——一进来就有温暖的钢琴
-  // 浏览器自动播放策略：首次必须用户交互后才能播，监听第一次点击/触摸
+  // 浏览器自动播放策略：等用户第一次交互后再播
   const AUTO_PLAY_TRACKS = ['pianoHaohai', 'pianoZuichang', 'timeToPaint'];
   const autoPick = AUTO_PLAY_TRACKS[Math.floor(Math.random() * AUTO_PLAY_TRACKS.length)];
   let autoPlayed = false;
   function tryAutoPlay() {
     if (autoPlayed) return;
     autoPlayed = true;
-    try { switchAmbientTrack(autoPick); } catch (e) {}
-    document.removeEventListener('click', tryAutoPlay);
-    document.removeEventListener('touchstart', tryAutoPlay);
-  }
-  // 1.5秒后先试一次（部分浏览器允许），不行就等用户第一次点击
-  setTimeout(() => {
-    try { switchAmbientTrack(autoPick); } catch (e) {}
-    // 如果1秒后没在播，注册监听等用户交互
+    document.removeEventListener('pointerdown', tryAutoPlay);
     setTimeout(() => {
-      if (!isMusicPlaying) {
-        document.addEventListener('click', tryAutoPlay, { once: true });
-        document.addEventListener('touchstart', tryAutoPlay, { once: true });
-      }
-    }, 1000);
-  }, 1500);
+      try { switchAmbientTrack(autoPick); } catch (e) {}
+    }, 300);
+  }
+  document.addEventListener('pointerdown', tryAutoPlay, { once: false, passive: true });
 
   // 云团子主动陪伴：根据时间/状态给出当下适合的减压建议
   scheduleProactiveCompanionship();
