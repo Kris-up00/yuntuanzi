@@ -393,7 +393,7 @@ function initGreeting() {
    ========================================================= */
 const modals = {
   talk:    document.getElementById('talkModal'),
-  breathe: document.getElementById('breatheModal'),
+  breathe: null, // 陪陪你已移除
   joy:     document.getElementById('joyModal'),
   shop:    document.getElementById('shopModal'),
   sleep:   document.getElementById('sleepModal'),
@@ -410,17 +410,13 @@ Object.values(modals).forEach(m => {
 });
 function openModal(name) { closeAllModals(); modals[name].classList.remove('hide'); }
 function closeAllModals() {
-  Object.values(modals).forEach(m => m.classList.add('hide'));
-  // 陪陪你模式如果还在跑（用户直接点 × 关弹窗，没点「好了」），停掉定时器和它自己开的氛围音
-  // stopBreathe 是幂等的，其他 modal 关闭时调它没副作用
-  stopBreathe();
+  Object.values(modals).forEach(m => { if (m) m.classList.add('hide'); });
 }
 
 document.querySelectorAll('.action-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const a = btn.dataset.action;
     if (a === 'talk')    { resetTalk(); openModal('talk'); }
-    if (a === 'breathe') { resetBreathe(); openModal('breathe'); }
     if (a === 'joy')     { renderJoyList(); openModal('joy'); }
     if (a === 'memory')  { renderMemoryList(); openModal('memory'); }
     if (a === 'shop')    { renderShop(); openModal('shop'); }
@@ -1099,11 +1095,10 @@ function executeCloudTool(name, args) {
   }
   if (name === 'offer_breathe') {
     setTimeout(() => {
-      showBubble('来，我陪你待一会儿，什么都不用做 ☁️', 3500);
-      setTimeout(() => { resetBreathe(); openModal('breathe'); }, 1600);
+      showBubble('我就在这儿，不急，慢慢来 ☁️', 3500);
     }, 800);
     setMood('calm', 4000);
-    return { ok: true, label: '提议陪陪你' };
+    return { ok: true, label: '陪着' };
   }
   if (name === 'remember') {
     if (args.content) {
@@ -1582,114 +1577,6 @@ function typewriter($el, fullText, prefix = '') {
 }
 
 /* 念给我听功能已移除 — 机械声不治愈 */
-
-/* =========================================================
-   6. 陪陪你（什么都不用做）
-   - 没有节奏、没有倒计时、没有轮次
-   - 云团子就静静待着，偶尔轻轻说一句"我在呢"
-   - 你随时可以走，也可以待到天荒地老
-   ========================================================= */
-const $breatheCircle = document.getElementById('breatheCircle');
-const $breatheText = document.getElementById('breatheText');
-const $breatheStart = document.getElementById('breatheStart');
-const $breatheStop = document.getElementById('breatheStop');
-
-let breathePresenceTimer = null;
-let breathePresenceShown = [];
-// 「陪陪你」是否自动开了氛围音；离开时如果是它自己开的就顺手停掉，是用户自己开的就不动
-let breatheStartedMusic = false;
-// 陪陪你期间临时调高的音量，退出时还原；null 表示没动过
-let breatheSavedVolume = null;
-
-// 陪伴期间的轻语：随机但不重复，慢慢说
-const BREATHE_PRESENCE_WORDS = [
-  '坐到我身边来…',
-  '不急',
-  '我哪儿也不去',
-  '什么都不用想',
-  '你在这里可以歇会儿',
-  '嗯，我在',
-  '不用说话也没关系',
-  '我陪着你',
-  '今天到这就够了',
-  '把今天先放下吧',
-  '不用扛着表现',
-  '呼—— 我也在呢',
-  '累了就靠一靠',
-  '慢慢来，不赶时间',
-];
-
-function resetBreathe() {
-  stopBreathe();
-  $breatheText.textContent = '我在这里…';
-}
-function stopBreathe() {
-  if (breathePresenceTimer) { clearInterval(breathePresenceTimer); breathePresenceTimer = null; }
-  breathePresenceShown = [];
-  $breatheStart.classList.remove('hide');
-  $breatheStop.classList.add('hide');
-  // 还原之前临时调高的音量
-  if (breatheSavedVolume !== null) {
-    state.musicVolume = breatheSavedVolume;
-    if ($volumeSlider) $volumeSlider.value = breatheSavedVolume;
-    if (currentAudioEl) currentAudioEl.volume = breatheSavedVolume / 100;
-    breatheSavedVolume = null;
-  }
-  // 氛围音如果是「陪陪你」自己开的，关掉；是用户自己开的，留着继续听
-  if (breatheStartedMusic) {
-    stopAllMusic();
-    breatheStartedMusic = false;
-  }
-}
-/* 柔性陪伴提示轮播：每 14 秒蹦一句，不重复直到说完一轮
-   14 秒是经验值：比 24 秒更"在场"，又不至于烦 */
-function startPresence() {
-  $breatheText.textContent = '坐到我身边来…';
-  breathePresenceShown = [];
-  if (breathePresenceTimer) clearInterval(breathePresenceTimer);
-  breathePresenceTimer = setInterval(() => {
-    // 池子用完就重新洗
-    if (breathePresenceShown.length >= BREATHE_PRESENCE_WORDS.length) breathePresenceShown = [];
-    let pick;
-    do {
-      pick = BREATHE_PRESENCE_WORDS[Math.floor(Math.random() * BREATHE_PRESENCE_WORDS.length)];
-    } while (breathePresenceShown.includes(pick));
-    breathePresenceShown.push(pick);
-    // 文字柔和切换：先淡出再换字
-    $breatheText.style.opacity = '0';
-    setTimeout(() => {
-      $breatheText.textContent = pick;
-      $breatheText.style.opacity = '';
-    }, 800);
-  }, 14000);
-}
-$breatheStart.addEventListener('click', () => {
-  $breatheStart.classList.add('hide');
-  $breatheStop.classList.remove('hide');
-  state.totalBreathes++;
-  setMood('calm');
-  startPresence();
-  // 如果外面没在放音乐，自动放一首陪伴音（默认夏夜虫鸣，夜里特别治愈）
-  // 是用户自己开的就不打断，让他继续听
-  if (!isMusicPlaying || !currentTrack) {
-    breatheStartedMusic = true;
-    // 临时把音量调到 60（音频已 normalize，60 听感刚好不刺耳）
-    // 用户没动过滑块（还是默认 40）时才调；动过就尊重他的设置
-    if (state.musicVolume === 40) {
-      breatheSavedVolume = state.musicVolume;
-      state.musicVolume = 60;
-      if ($volumeSlider) $volumeSlider.value = 60;
-    }
-    switchAmbientTrack('crickets');
-  } else {
-    breatheStartedMusic = false;
-  }
-});
-$breatheStop.addEventListener('click', () => {
-  stopBreathe();
-  $breatheText.textContent = '随时来 ☁️';
-  gainReward({ exp: 2, stars: 1, mood: 'calm' });
-});
 
 /* =========================================================
    7. 小确幸

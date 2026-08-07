@@ -128,10 +128,6 @@
       <span class="action-ico">💬</span>
       <span>说说话</span>
     </button>
-    <button class="action-btn" data-action="breathe">
-      <span class="action-ico">☁️</span>
-      <span>陪陪你</span>
-    </button>
     <button class="action-btn" data-action="joy">
       <span class="action-ico">✨</span>
       <span>小确幸</span>
@@ -200,24 +196,6 @@
         <button id="aiKeyClear" class="ghost-btn">清除 Key</button>
       </div>
       <p id="aiKeyMsg" class="ai-key-msg"></p>
-    </div>
-  </div>
-
-  <!-- ============ 弹窗：陪陪你（什么都不用做） ============ -->
-  <div id="breatheModal" class="modal hide">
-    <div class="modal-card breathe-card">
-      <button class="close-btn" data-close>×</button>
-      <h3>☁️ 我陪着你</h3>
-      <p class="modal-tip">什么都不用做，待一会儿就好</p>
-      <div class="breathe-stage">
-        <div class="breathe-halo"></div>
-        <div id="breatheCircle" class="breathe-circle calm"></div>
-        <p id="breatheText" class="breathe-text">我在这里…</p>
-      </div>
-      <div class="breathe-actions">
-        <button id="breatheStart" class="primary-btn">待一会儿</button>
-        <button id="breatheStop" class="ghost-btn hide">好了</button>
-      </div>
     </div>
   </div>
 
@@ -424,7 +402,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=78"></script>
+  <script src="app.js?v=79"></script>
   <script>
     // 注册 Service Worker：仅在 https/localhost 下生效，文件读取(file://)自动跳过
     if ('serviceWorker' in navigator) {
