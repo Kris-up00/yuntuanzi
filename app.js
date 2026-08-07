@@ -2536,27 +2536,26 @@ function boot() {
   applyEquipped();
   initGreeting();
   restoreMusicUI();
-  initStarryScene();
+  // initStarryScene(); // 暂时禁用，排查点击问题
   // 清理历史上被错误抓成名字的记忆（如"谁""什么"），让云团子真正记得你
   cleanupBadMemory();
   // 迁移旧版自定义音乐：blob URL 失效的清掉；新版文件曲目从 IndexedDB 取出
   migrateOldCustomTracks();
   resolveFileTracks();
 
-  // 自动播放花海——一进来就有温暖的钢琴
-  // 浏览器自动播放策略：等用户第一次交互后再播
-  const AUTO_PLAY_TRACKS = ['pianoHaohai', 'pianoZuichang', 'timeToPaint'];
-  const autoPick = AUTO_PLAY_TRACKS[Math.floor(Math.random() * AUTO_PLAY_TRACKS.length)];
-  let autoPlayed = false;
-  function tryAutoPlay() {
-    if (autoPlayed) return;
-    autoPlayed = true;
-    document.removeEventListener('pointerdown', tryAutoPlay);
-    setTimeout(() => {
-      try { switchAmbientTrack(autoPick); } catch (e) {}
-    }, 300);
-  }
-  document.addEventListener('pointerdown', tryAutoPlay, { once: false, passive: true });
+  // 自动播放暂时禁用，排查点击问题
+  // const AUTO_PLAY_TRACKS = ['pianoHaohai', 'pianoZuichang', 'timeToPaint'];
+  // const autoPick = AUTO_PLAY_TRACKS[Math.floor(Math.random() * AUTO_PLAY_TRACKS.length)];
+  // let autoPlayed = false;
+  // function tryAutoPlay() {
+  //   if (autoPlayed) return;
+  //   autoPlayed = true;
+  //   document.removeEventListener('pointerdown', tryAutoPlay);
+  //   setTimeout(() => {
+  //     try { switchAmbientTrack(autoPick); } catch (e) {}
+  //   }, 300);
+  // }
+  // document.addEventListener('pointerdown', tryAutoPlay, { once: false, passive: true });
 
   // 云团子主动陪伴：根据时间/状态给出当下适合的减压建议
   scheduleProactiveCompanionship();
