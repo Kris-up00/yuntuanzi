@@ -3087,16 +3087,42 @@ $msgClear.addEventListener('click', async () => {
   setTimeout(() => { $msgTip.textContent = '家人打开云团子时，云团子会替你把这段话带给他～'; }, 2500);
 });
 
-/* 家人打开 app 时：若云端有你的留言，云团子替你转达 */
+/* 家人打开 app 时：若云端有你的留言，云团子先说话再缓缓展开留言卡片 */
 function showFamilyMessageIfAny() {
   const msg = localStorage.getItem(MSG_KEY);
   if (!msg) return;
+  // 标记本次已展示过，不重复弹
+  if (sessionStorage.getItem('yztz_msg_shown')) return;
+  sessionStorage.setItem('yztz_msg_shown', '1');
+
   setTimeout(() => {
+    // 第一步：云团子先说一句话，制造期待
     if (typeof showBubble === 'function') {
-      showBubble('💌 家人托我带句话给你："' + msg + '"', 8000);
+      showBubble('有人托我带了句话给你……', 3000);
     }
-    if (typeof setMood === 'function') setMood('comfort', 6000);
-  }, 2500);
+    if (typeof setMood === 'function') setMood('comfort', 3000);
+
+    // 第二步：3秒后留言卡片缓缓展开
+    setTimeout(() => {
+      const overlay = document.createElement('div');
+      overlay.className = 'family-msg-overlay';
+      overlay.innerHTML = `
+        <div class="family-msg-card">
+          <div class="family-msg-icon">💌</div>
+          <div class="family-msg-title">有人托云团子带的话</div>
+          <div class="family-msg-text">${escapeHtml(msg)}</div>
+          <button class="family-msg-close">知道了，谢谢 ☁️</button>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      requestAnimationFrame(() => overlay.classList.add('show'));
+      overlay.querySelector('.family-msg-close').addEventListener('click', () => {
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.remove(), 600);
+      });
+      if (typeof setMood === 'function') setMood('happy', 5000);
+    }, 2800);
+  }, 2000);
 }
 
 bootSyncMsg();

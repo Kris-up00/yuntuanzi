@@ -1974,6 +1974,68 @@ body.night .spirit-glow {
 /* ---------- 暖心提醒 ---------- */
 /* 暖心提醒相关样式已移除 */
 
+/* ---------- 家人留言卡片 ---------- */
+.family-msg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(30, 30, 50, 0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity .6s ease;
+  padding: 20px;
+}
+.family-msg-overlay.show { opacity: 1; }
+.family-msg-card {
+  background: linear-gradient(160deg, #fffef8, #fdf6ee, #f0f4ff);
+  border-radius: 20px;
+  padding: 32px 24px 28px;
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(80, 60, 100, 0.18), 0 0 0 1px rgba(255,255,255,0.6) inset;
+  transform: translateY(20px) scale(0.96);
+  transition: transform .5s cubic-bezier(.34,1.56,.64,1);
+}
+.family-msg-overlay.show .family-msg-card {
+  transform: translateY(0) scale(1);
+}
+.family-msg-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  animation: msgFloat 3s ease-in-out infinite;
+}
+@keyframes msgFloat {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.family-msg-title {
+  font-size: 16px;
+  color: #8b7ea0;
+  margin-bottom: 16px;
+  letter-spacing: 1px;
+}
+.family-msg-text {
+  font-size: 17px;
+  line-height: 1.8;
+  color: #3a3040;
+  font-weight: 500;
+  margin-bottom: 24px;
+  padding: 0 8px;
+}
+.family-msg-close {
+  font-size: 13px;
+  color: #b0a8b8;
+  background: none;
+  border: none;
+  padding: 8px 20px;
+  cursor: pointer;
+}
+
 /* ---------- 音乐面板：分组列表 ---------- */
 .track-group { margin-bottom: 14px; }
 .track-group-head {
