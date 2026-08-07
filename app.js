@@ -542,30 +542,28 @@ function showFlowerMemory(flower) {
 
   const overlay = document.createElement('div');
   overlay.className = 'family-msg-overlay';
-  let content = `<div class="family-msg-card" style="text-align:left;">
-    <div style="text-align:center;font-size:36px;margin-bottom:8px;">${flower.emoji}</div>
-    <div style="text-align:center;font-size:14px;color:#8b7ea0;margin-bottom:16px;">${dateStr} · ${moodLabel}</div>
-    <div style="font-size:15px;color:#3a3040;line-height:1.8;margin-bottom:16px;">`;
+  let content = `<div class="flower-memory-card">
+    <div class="flower-memory-emoji">${flower.emoji}</div>
+    <div class="flower-memory-date">${dateStr} · ${moodLabel}</div>
+    <div class="flower-memory-body">`;
   if (memoryText) {
-    content += `<div style="font-size:12px;color:#8b7ea0;margin-bottom:6px;">那天你和云团子说了：</div><div style="margin-bottom:14px;">${escapeHtml(memoryText)}</div>`;
+    content += `<div class="flower-memory-label">那天你和云团子说了：</div><div class="flower-memory-text">${escapeHtml(memoryText)}</div>`;
   }
   if (moodLogText) {
-    content += `<div style="font-size:12px;color:#8b7ea0;margin-bottom:6px;">那天的心情：</div><div style="margin-bottom:14px;">${escapeHtml(moodLogText)}</div>`;
+    content += `<div class="flower-memory-label">那天的心情：</div><div class="flower-memory-text">${escapeHtml(moodLogText)}</div>`;
   }
   if (!memoryText && !moodLogText) {
-    content += `<div style="text-align:center;color:#8b7ea0;">那天云团子陪了你，<br>花开在了这里 🌷</div>`;
+    content += `<div class="flower-memory-empty">那天云团子陪了你，<br>花开在了这里 🌷</div>`;
   }
   content += `</div>
-    <div style="text-align:center;">
-      <button class="family-msg-close" style="font-size:13px;color:#b0a8b8;border:1px solid #e8e0ea;border-radius:20px;padding:8px 24px;background:none;cursor:pointer;">合上 ☁️</button>
-    </div>
+    <button class="flower-memory-close">合上 ☁️</button>
   </div>`;
   overlay.innerHTML = content;
   document.body.appendChild(overlay);
   requestAnimationFrame(() => {
     requestAnimationFrame(() => overlay.classList.add('show'));
   });
-  overlay.querySelector('.family-msg-close').addEventListener('click', () => {
+  overlay.querySelector('.flower-memory-close').addEventListener('click', () => {
     overlay.classList.remove('show');
     setTimeout(() => overlay.remove(), 600);
   });

@@ -2070,6 +2070,96 @@ body.night .spirit-glow {
 }
 .family-msg-close:active { background: #f5f0f5; }
 
+/* ---------- 花朵记忆卡片 ---------- */
+.flower-memory-card {
+  position: relative;
+  max-width: 340px;
+  width: 100%;
+  background: linear-gradient(165deg, #fffbf5 0%, #fef5ec 30%, #f3f0ff 70%, #eef4ff 100%);
+  border-radius: 20px;
+  padding: 40px 22px 24px;
+  box-shadow: 0 24px 70px rgba(80, 50, 90, 0.3), 0 0 0 1px rgba(255,255,255,0.5) inset;
+  text-align: left;
+  z-index: 2;
+  opacity: 0;
+  transform: translateY(30px) scale(0.92);
+  transition: opacity .6s ease, transform .6s cubic-bezier(.34,1.56,.64,1);
+}
+.family-msg-overlay.show .flower-memory-card {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+/* 顶部光晕 */
+.flower-memory-card::before {
+  content: '';
+  position: absolute;
+  top: -20px; left: 50%;
+  transform: translateX(-50%);
+  width: 120px; height: 60px;
+  background: radial-gradient(ellipse at center, rgba(255,220,180,0.5), transparent 70%);
+  filter: blur(12px);
+  pointer-events: none;
+}
+.flower-memory-emoji {
+  text-align: center;
+  font-size: 44px;
+  margin-bottom: 8px;
+  animation: msgFloat 3s ease-in-out infinite;
+  filter: drop-shadow(0 4px 6px rgba(200,150,180,0.2));
+}
+.flower-memory-date {
+  text-align: center;
+  font-size: 13px;
+  color: #9a8caa;
+  margin-bottom: 20px;
+  letter-spacing: 0.5px;
+}
+.flower-memory-body {
+  background: rgba(255,255,255,0.6);
+  border-radius: 14px;
+  padding: 16px 14px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255,255,255,0.8);
+}
+.flower-memory-label {
+  font-size: 11px;
+  color: #a89ab8;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+.flower-memory-text {
+  font-size: 15px;
+  color: #3a3040;
+  line-height: 1.9;
+  margin-bottom: 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.flower-memory-text:last-child { margin-bottom: 0; }
+.flower-memory-empty {
+  text-align: center;
+  font-size: 14px;
+  color: #a89ab8;
+  line-height: 2;
+  padding: 8px 0;
+}
+.flower-memory-close {
+  display: block;
+  margin: 0 auto;
+  font-size: 13px;
+  color: #b0a8b8;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(200,190,210,0.4);
+  border-radius: 20px;
+  padding: 8px 24px;
+  cursor: pointer;
+  transition: all .3s;
+}
+.flower-memory-close:active {
+  background: rgba(240,230,240,0.8);
+  transform: scale(0.97);
+}
+
 /* ---------- 音乐面板：分组列表 ---------- */
 .track-group { margin-bottom: 14px; }
 .track-group-head {
