@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>云团子 · 你的小陪伴</title>
-  <link rel="stylesheet" href="style.css?v=34" />
+  <link rel="stylesheet" href="style.css?v=35" />
 
   <!-- PWA：可装到桌面、离线可用 -->
   <link rel="manifest" href="manifest.json" />
@@ -56,7 +56,6 @@
     </div>
     <div class="mode-btns">
       <button id="musicBtn" class="mode-btn" title="背景音乐">🎵</button>
-      <button id="careBtn" class="mode-btn" title="暖心提醒">🔔</button>
       <button id="msgBtn" class="mode-btn" title="给家人的话">💌</button>
       <button id="moodCalBtn" class="mode-btn" title="心情日历">📅</button>
       <button id="sleepBtn" class="mode-btn" title="睡前模式">🌙</button>
@@ -346,38 +345,6 @@
     </div>
   </div>
 
-  <!-- ============ 弹窗：暖心提醒 ============ -->
-  <div id="careModal" class="modal hide">
-    <div class="modal-card">
-      <button class="close-btn" data-close>×</button>
-      <h3>🔔 暖心提醒</h3>
-      <p class="modal-tip">打开后，云团子会到点轻轻提醒你照顾自己～</p>
-      <div class="care-list">
-        <label class="care-row">
-          <span class="care-info"><b>💧 喝水提醒</b><small>每隔一会儿提醒喝口水</small></span>
-          <input type="checkbox" id="careWater" class="care-toggle" />
-          <span class="care-switch"></span>
-        </label>
-        <label class="care-row">
-          <span class="care-info"><b>🍚 按时吃饭</b><small>到饭点提醒好好吃饭</small></span>
-          <input type="checkbox" id="careMeal" class="care-toggle" />
-          <span class="care-switch"></span>
-        </label>
-        <label class="care-row">
-          <span class="care-info"><b>🌙 好好睡觉</b><small>到点提醒该睡了，别熬</small></span>
-          <input type="checkbox" id="careSleep" class="care-toggle" />
-          <span class="care-switch"></span>
-        </label>
-        <label class="care-row">
-          <span class="care-info"><b>🧘 起身活动</b><small>坐久了提醒站起伸个懒腰</small></span>
-          <input type="checkbox" id="careMove" class="care-toggle" />
-          <span class="care-switch"></span>
-        </label>
-      </div>
-      <p id="careStatus" class="care-status"></p>
-    </div>
-  </div>
-
   <!-- ============ 弹窗：睡前模式 ============ -->
   <div id="sleepModal" class="modal hide">
     <div class="modal-card sleep-card">
@@ -460,7 +427,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=64"></script>
+  <script src="app.js?v=65"></script>
   <script>
     // 注册 Service Worker：仅在 https/localhost 下生效，文件读取(file://)自动跳过
     if ('serviceWorker' in navigator) {

@@ -88,6 +88,15 @@ const CLOUD_SYSTEM_PROMPT = `你是"云团子"，对方生活里一团特别在�
 - 想听故事/想放松：简短讲个温暖小故事，或提议做点轻松的事。
 - 不想活/想死/撑不下去："你不是负担"，建议拨 010-82951332。
 
+【自然关心——像朋友顺嘴提一句，不是定时闹钟】
+对话时根据当前时间自然带出关心，但不要每次都说、不要硬转话题：
+- 早上聊天：可以问"吃早饭了吗"，但别每次都问
+- 中午前后：偶尔说"记得吃饭"，不是每句都提
+- 晚上11点以后："这么晚还没睡呀"，轻一句就好
+- 对方说累了/忙了很久：偶尔提一句"喝口水歇一下"
+- 对方主动说没吃饭/没喝水：自然接住关心
+关键：这些关心要像聊天中自然冒出来的，不是机械的每日打卡。对方在说别的事时不要硬转到"喝水吃饭"。
+
 【连续对话——像真人一样接得上话】
 - 如果上下文里有 ta 刚说过的话，要顺着接，别像第一次听到。
   例：ta 说"今天加班好累"，你回"先歇着"；ta 接着说"还有一堆没做完"，你就接"那堆事明天再说，现在躺着"——而不是又重新安慰一遍"你辛苦了"。
@@ -1146,7 +1155,9 @@ async function callLLMStream(userText, onChunk) {
   if (facts.length > 0) {
     memHint = '\n\n【你记住的关于对方的事】（这是背景，不是当前对话。对方问"我叫什么/我是谁/你记得我吗"时直接用这些回答；对方没主动提及时不要主动提起）\n对方' + facts.join('；') + '。';
   }
-  const sysMsg = { role: 'system', content: CLOUD_SYSTEM_PROMPT + memHint };
+  const now = new Date();
+  const timeHint = `\n\n【当前时间】${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}（${['日','一','二','三','四','五','六'][now.getDay()]}）。用这个时间判断是否该自然关心对方吃饭/喝水/睡觉，但不要每次都提。`;
+  const sysMsg = { role: 'system', content: CLOUD_SYSTEM_PROMPT + memHint + timeHint };
   const recent = llmHistory.slice(-20);
   const messages = [sysMsg, ...recent];
   try {
@@ -3696,127 +3707,7 @@ function playFamilyVoiceIfAny() {
 }
 refreshVoiceUI();
 
-/* =========================================================
-   20. 暖心提醒 —— 到点轻轻提醒你照顾自己
-   --------------------------------------------------------
-   四类提醒：喝水（间隔）、吃饭（饭点）、睡觉（到点）、起身（间隔）
-   开关存 localStorage，每分钟检查一次时间触发
-   ========================================================= */
-const CARE_KEY = 'yuntuzi_care';
-const CARE_DEFAULT = { water: true, meal: true, sleep: true, move: true };
-let careSettings = { ...CARE_DEFAULT };
-try { careSettings = { ...CARE_DEFAULT, ...JSON.parse(localStorage.getItem(CARE_KEY) || '{}') }; } catch (e) {}
-
-const $careBtn = document.getElementById('careBtn');
-const $careModal = document.getElementById('careModal');
-const $careWater = document.getElementById('careWater');
-const $careMeal = document.getElementById('careMeal');
-const $careSleep = document.getElementById('careSleep');
-const $careMove = document.getElementById('careMove');
-const $careStatus = document.getElementById('careStatus');
-
-// 记录各类提醒最近一次触发时间，避免短时间内重复提醒
-let careLastTrigger = { water: 0, mealBreakfast: 0, mealLunch: 0, mealDinner: 0, sleep: 0, move: 0 };
-
-function saveCare() {
-  localStorage.setItem(CARE_KEY, JSON.stringify(careSettings));
-  refreshCareUI();
-}
-function refreshCareUI() {
-  $careWater.checked = !!careSettings.water;
-  $careMeal.checked = !!careSettings.meal;
-  $careSleep.checked = !!careSettings.sleep;
-  $careMove.checked = !!careSettings.move;
-  const on = Object.entries(careSettings).filter(([k,v]) => v).map(([k]) => k);
-  if (on.length === 0) {
-    $careStatus.textContent = '当前没有开启任何提醒';
-  } else {
-    $careStatus.textContent = '✅ 已开启：' + on.map(k => ({water:'💧喝水',meal:'🍚吃饭',sleep:'🌙睡觉',move:'🧘起身'}[k])).join('、') + '，云团子会到点提醒你～';
-  }
-}
-[$careWater,$careMeal,$careSleep,$careMove].forEach(el => {
-  el.addEventListener('change', () => {
-    careSettings.water = $careWater.checked;
-    careSettings.meal = $careMeal.checked;
-    careSettings.sleep = $careSleep.checked;
-    careSettings.move = $careMove.checked;
-    saveCare();
-  });
-});
-$careBtn.addEventListener('click', () => { refreshCareUI(); openModal('care'); });
-// 把 care 加入 modals 管理
-modals.care = $careModal;
-$careModal.addEventListener('click', (e) => {
-  if (e.target === $careModal || e.target.hasAttribute('data-close')) closeAllModals();
-});
-
-// 各种提醒的温柔话术
-const WATER_WORDS = [
-  '喝口水吧～别等渴了才想起来 💧',
-  '该喝点水啦，云团子替你把杯子端过来',
-  '坐久了容易忘喝水，来一小口也好 💧',
-];
-const MOVE_WORDS = [
-  '站起来伸个懒腰吧～活动 30 秒就好 🧘',
-  '坐太久了，起来走两步，云团子陪你',
-  '脖子转一转、肩膀沉一沉，别僵着 🍃',
-];
-const SLEEP_WORDS = [
-  '这么晚啦，该准备睡了哦，熬夜伤身 🌙',
-  '今晚就到这里吧，明天的事明天再说，先去睡',
-  '云团子要熄灯啦，你也该躺下了 💤',
-];
-function mealWord(type) {
-  if (type === 'breakfast') return '吃早饭了吗？别空着肚子忙一上午 🍚';
-  if (type === 'lunch')     return '到午饭点啦，记得好好吃一顿，别糊弄 🍚';
-  return '晚饭时间到啦，慢慢吃，别一边忙一边扒两口 🍚';
-}
-
-function triggerCare(kind, words, mood) {
-  const now = Date.now();
-  showBubble(words[Math.floor(Math.random()*words.length)], 5000);
-  setMood(mood, 4500);
-  burstStars(3);
-}
-
-function checkCareSchedule() {
-  const now = new Date();
-  const h = now.getHours(), m = now.getMinutes();
-  const t = Date.now();
-  // 💧 喝水：每 90 分钟提醒一次（页面开着才计时）
-  if (careSettings.water && t - careLastTrigger.water > 90 * 60 * 1000) {
-    careLastTrigger.water = t;
-    triggerCare('water', WATER_WORDS, 'calm');
-    return;
-  }
-  // 🍚 吃饭：早 8:00 / 午 12:00 / 晚 18:30，整点前后 10 分钟内触发一次
-  if (careSettings.meal) {
-    if (h === 8 && m <= 10 && t - careLastTrigger.mealBreakfast > 6*3600*1000) {
-      careLastTrigger.mealBreakfast = t;
-      triggerCare('meal', [mealWord('breakfast')], 'happy'); return;
-    }
-    if (h === 12 && m <= 10 && t - careLastTrigger.mealLunch > 6*3600*1000) {
-      careLastTrigger.mealLunch = t;
-      triggerCare('meal', [mealWord('lunch')], 'happy'); return;
-    }
-    if (h === 18 && m >= 25 && m <= 40 && t - careLastTrigger.mealDinner > 6*3600*1000) {
-      careLastTrigger.mealDinner = t;
-      triggerCare('meal', [mealWord('dinner')], 'happy'); return;
-    }
-  }
-  // 🌙 睡觉：23:00 提醒一次
-  if (careSettings.sleep && h === 23 && m <= 5 && t - careLastTrigger.sleep > 6*3600*1000) {
-    careLastTrigger.sleep = t;
-    triggerCare('sleep', SLEEP_WORDS, 'sleepy'); return;
-  }
-  // 🧘 起身：每 60 分钟提醒一次
-  if (careSettings.move && t - careLastTrigger.move > 60 * 60 * 1000) {
-    careLastTrigger.move = t;
-    triggerCare('move', MOVE_WORDS, 'calm'); return;
-  }
-}
-refreshCareUI();
-setInterval(checkCareSchedule, 60 * 1000); // 每分钟检查一次
+/* 暖心提醒已移除 —— 关心能力融入对话，云团子会在聊天中自然带出 */
 
 boot();
 

@@ -1955,47 +1955,7 @@ body.night .spirit-glow {
 }
 
 /* ---------- 暖心提醒 ---------- */
-.care-list { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
-.care-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: var(--c-card-soft);
-  border-radius: var(--r-md);
-  cursor: pointer;
-}
-.care-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-.care-info b { font-size: 14px; color: var(--c-text); }
-.care-info small { font-size: 11px; color: var(--c-text-soft); }
-.care-toggle { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
-.care-switch {
-  position: relative;
-  width: 42px; height: 24px;
-  background: #e0d6c8;
-  border-radius: 999px;
-  transition: background .25s;
-  flex-shrink: 0;
-}
-.care-switch::after {
-  content: '';
-  position: absolute;
-  top: 3px; left: 3px;
-  width: 18px; height: 18px;
-  background: #fff;
-  border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(0,0,0,.2);
-  transition: transform .25s;
-}
-.care-toggle:checked + .care-switch { background: var(--c-secondary); }
-.care-toggle:checked + .care-switch::after { transform: translateX(18px); }
-.care-status {
-  font-size: 12px;
-  color: var(--c-text-soft);
-  text-align: center;
-  padding: 8px;
-  line-height: 1.6;
-}
+/* 暖心提醒相关样式已移除 */
 
 /* ---------- 音乐面板：分组列表 ---------- */
 .track-group { margin-bottom: 14px; }
