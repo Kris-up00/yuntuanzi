@@ -1158,12 +1158,12 @@ async function callLLMStream(userText, onChunk) {
   const now = new Date();
   const timeHint = `\n\n【当前时间】${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}（${['日','一','二','三','四','五','六'][now.getDay()]}）。用这个时间判断是否该自然关心对方吃饭/喝水/睡觉，但不要每次都提。`;
   const sysMsg = { role: 'system', content: CLOUD_SYSTEM_PROMPT + memHint + timeHint };
-  const recent = llmHistory.slice(-20);
+  const recent = llmHistory.slice(-12);
   const messages = [sysMsg, ...recent];
   try {
     // 15 秒超时保护：大模型慢一点别急着判失败，给足思考时间显得更聪明
     const ctrl = new AbortController();
-    const timeoutId = setTimeout(() => ctrl.abort(), 15000);
+    const timeoutId = setTimeout(() => ctrl.abort(), 20000);
     // 只有负面情绪才带 tools（放歌/陪陪你/记事），闲聊不带，避免 flash 模型分心答非所问
     const isNegative = /累|焦虑|紧张|怕|孤独|委屈|崩溃|绝望|难过|伤心|不好|不开心|低落|烦|难受|痛|哭|emo|撑不|不想活|想死|睡不着|失眠|熬|压力|慌|寂寞|委屈|难过|想哭|撑不住|崩溃/.test(userText);
     const reqBody = {
